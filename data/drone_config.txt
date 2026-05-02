@@ -1,0 +1,1 @@
+# Placeholder drone_config.txt (format is your implementation choice)

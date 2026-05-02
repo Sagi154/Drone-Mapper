@@ -1,0 +1,32 @@
+@startuml
+title DroneMapper (scaffold) - class diagram
+
+package include {
+  interface ILidarSensor
+  interface IPositionSensor
+  interface IMovementDriver
+  interface IBuildingMap
+}
+
+package simulation {
+  class SimulationState
+  class LidarMock
+  class PositionMock
+  class MovementMock
+}
+
+LidarMock ..|> ILidarSensor
+PositionMock ..|> IPositionSensor
+MovementMock ..|> IMovementDriver
+
+LidarMock --> SimulationState
+PositionMock --> SimulationState
+MovementMock --> SimulationState
+
+package mapping {
+  class BuildingMap
+}
+
+BuildingMap ..|> IBuildingMap
+
+@enduml

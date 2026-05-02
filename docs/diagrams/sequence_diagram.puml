@@ -1,0 +1,19 @@
+@startuml
+title DroneMapper (scaffold) - main wiring
+
+actor User
+participant main
+participant SimulationState
+participant Mocks as "Lidar/Position/Movement mocks"
+participant DroneAlgorithm
+participant BuildingMap
+
+User -> main : argv[optional path]
+main -> SimulationState : construct
+main -> Mocks : construct (share state)
+main -> BuildingMap : construct (mission)
+main -> DroneAlgorithm : construct (interfaces)
+main -> DroneAlgorithm : tick()
+main -> User : write map_output.txt
+
+@enduml

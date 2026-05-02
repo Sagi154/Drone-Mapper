@@ -1,0 +1,5 @@
+Bonus checklist (fill in for submission)
+
+- [ ] GTest target `drone_mapper_tests` — how to run: `ctest` or run the test binary from your build dir.
+- [ ] SFML visualizer target `drone_visualizer` — how to run and what inputs it expects.
+- [ ] Optional: logging — describe if enabled.
