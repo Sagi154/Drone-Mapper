@@ -1,0 +1,1 @@
+# Placeholder map_input.txt (format is your implementation choice)
