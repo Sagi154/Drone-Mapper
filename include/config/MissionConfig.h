@@ -13,7 +13,7 @@ struct MissionConfig {
   LengthCm max_x{};
   LengthCm min_y{};
   LengthCm max_y{};
-  LengthCm min_heightasdf{};
+  LengthCm min_height{};
   LengthCm max_height{};
   std::int32_t xy_decimal_places{2};
   std::int32_t height_decimal_places{2};

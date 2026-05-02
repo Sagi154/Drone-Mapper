@@ -5,7 +5,7 @@
 namespace dmap {
 
 DroneConfig parseDroneConfig(const std::filesystem::path& path) {
-  DroneConfig cfgfsadf{};
+  DroneConfig cfg{};
   std::ifstream in(path);
   (void)in;
   return cfg;
