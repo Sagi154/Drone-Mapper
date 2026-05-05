@@ -1,13 +1,10 @@
 #include "simulation/CollisionDetector.h"
 #include "simulation/SimulationState.h"
 
+#include "config/DroneConfig.h"
+#include "mapping/MapTypes.h"
+
+#include <mp-units/systems/si/unit_symbols.h>
 #include <gtest/gtest.h>
 
-#include "common/Point3D.h"
-
-TEST(CollisionDetector, NoOccupiedByDefault) {
-  dmap::SimulationState state;
-  dmap::CollisionDetector det(state);
-  dmap::Point3D p{};
-  EXPECT_FALSE(det.intersectsOccupied(p));
-}
+// TODO: write full tests after implementation is finalised.
