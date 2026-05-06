@@ -10,6 +10,12 @@ class SimulationState;
 
 class CollisionDetector {
  public:
+  // Lightweight constructor for point-only checks (intersectsOccupied).
+  // Footprint methods are not available with this constructor.
+  // Callers: LidarMock::scan, tests/test_collision_detector.cpp
+  explicit CollisionDetector(const SimulationState& state);
+
+  // Full constructor required for footprint / face checks.
   // step_xy_cm and step_height_cm should equal the map cell size
   // (10^(-decimal_places) from MissionConfig).
   CollisionDetector(const SimulationState& state, DroneConfig drone_cfg,

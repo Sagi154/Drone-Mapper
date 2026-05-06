@@ -6,6 +6,11 @@ add_executable(
   test_config_parser.cpp
   test_scorer.cpp
   test_collision_detector.cpp
+  test_simulation_state.cpp
+  test_movement_mock.cpp
+  test_position_mock.cpp
+  test_lidar_beam_calculator.cpp
+  test_integration.cpp
 )
 
 target_include_directories(drone_mapper_tests PRIVATE "${CMAKE_SOURCE_DIR}/src")

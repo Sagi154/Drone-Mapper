@@ -11,6 +11,9 @@ namespace dmap {
 
 namespace su = mp_units::si::unit_symbols;
 
+CollisionDetector::CollisionDetector(const SimulationState& state)
+    : state_(state) {}
+
 CollisionDetector::CollisionDetector(const SimulationState& state,
                                      DroneConfig drone_cfg,
                                      double step_xy_cm,

@@ -30,7 +30,7 @@ int main(int argc, char** argv) {
   dmap::BuildingMap map(mission);
   dmap::LidarMock lidar(state, drone_cfg);
   dmap::PositionMock pos(state);
-  dmap::MovementMock move(state);
+  dmap::MovementMock move(state, drone_cfg, mission);
   dmap::DroneAlgorithm algo(lidar, pos, move, map);
   algo.tick();
 
