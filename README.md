@@ -10,7 +10,7 @@ Set `VCPKG_ROOT` and configure with the presets in `CMakePresets.json`, or pass:
 
 Then `cmake --build build`.
 
-To skip the SFML visualizer target (library and tests still build), add `-DDRONE_MAPPER_BUILD_VISUALIZER=OFF` to the `cmake` configure line.
+The SFML visualizer is **off** by default (no SFML in vcpkg). To build `drone_visualizer`, add `-DDRONE_MAPPER_BUILD_VISUALIZER=ON` to the configure line (vcpkg will then install SFML via the `visualizer` manifest feature).
 
 ## CI (Docker)
 
