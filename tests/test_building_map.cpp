@@ -1,13 +1,18 @@
 // test_building_map.cpp
 // Unit tests for BuildingMap: default state, set/get round-trips, bounds
-// enforcement, quantization behavior, allCells() enumeration, and bounds()
-// accessor.
+// enforcement, quantization behavior, allCells() enumeration, bounds()
+// accessor, and MapFileWriter round-trip against the map file reader.
 
 #include "mapping/BuildingMap.h"
 #include "common/Point3D.h"
+#include "io/ErrorLogger.h"
+#include "io/MapFileReader.h"
+#include "io/MapFileWriter.h"
+#include "simulation/SimulationState.h"
 
 #include <mp-units/systems/si/unit_symbols.h>
 #include <gtest/gtest.h>
+#include <filesystem>
 
 namespace su = mp_units::si::unit_symbols;
 using namespace dmap;
@@ -143,4 +148,37 @@ TEST(BuildingMap, Bounds_MatchMissionConfig) {
                    m.max_height.numerical_value_in(su::cm));
   EXPECT_EQ(b.xy_decimal_places,     m.xy_decimal_places);
   EXPECT_EQ(b.height_decimal_places, m.height_decimal_places);
+}
+
+// -----------------------------------------------------------------------
+// MapFileWriter round-trip
+// -----------------------------------------------------------------------
+
+// What: write a sparse BuildingMap to disk and reload it with the same
+//       grammar as map_input (loadGroundTruthMap).
+// Expected: bounds are set and the three explicit cells round-trip to the
+//           same Occupied / Empty values in SimulationState.
+TEST(BuildingMap, MapFileWriter_RoundTrip) {
+  BuildingMap map(makeMission());
+  map.set(pt(10, 0, 50), MapValue::Occupied);
+  map.set(pt(20, 0, 50), MapValue::Empty);
+  map.set(pt(30, 0, 50), MapValue::Occupied);
+
+  const std::filesystem::path path =
+      std::filesystem::temp_directory_path() / "dm_building_map_roundtrip_test.txt";
+  std::error_code ec;
+  std::filesystem::remove(path, ec);
+
+  ASSERT_TRUE(writeBuildingMap(path, map));
+
+  SimulationState state;
+  ErrorLogger logger;
+  ASSERT_TRUE(loadGroundTruthMap(path, state, logger));
+  ASSERT_TRUE(state.hasBounds());
+
+  EXPECT_EQ(state.truthValue(pt(10, 0, 50)), MapValue::Occupied);
+  EXPECT_EQ(state.truthValue(pt(20, 0, 50)), MapValue::Empty);
+  EXPECT_EQ(state.truthValue(pt(30, 0, 50)), MapValue::Occupied);
+
+  std::filesystem::remove(path, ec);
 }
