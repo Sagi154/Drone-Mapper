@@ -1,36 +1,36 @@
 // DroneAlgorithm.cpp
-// Milestone 2: projects lidar hits into the sparse BuildingMap using the same beam
-// geometry as LidarMock (via hitToWorldPoint). For each hit with measurable range,
-// marks Empty along the ray in grid-sized steps, then Occupied at the hit cell.
-// Movement is unused until the sweep loop lands.
+// Each tick: lidar scan into the building map (empty along rays, occupied at hits), then one
+// advance. If the move does not change XYH, rotate 90° right; four consecutive blocked advances
+// end the run (local horizontal dead-end at the current height).
 
 #include "algorithm/DroneAlgorithm.h"
 
 #include "common/MathUtils.h"
 #include "mapping/MapTypes.h"
+#include "sensors/LidarTypes.h"
 
 #include <algorithm>
+#include <cmath>
 #include <mp-units/systems/si/unit_symbols.h>
 
 namespace dmap {
 
-DroneAlgorithm::DroneAlgorithm(ILidarSensor& lidar, IPositionSensor& pos, IMovementDriver& move,
-                                 IBuildingMap& map)
-    : lidar_(lidar), pos_(pos), move_(move), map_(map) {}
+namespace {
 
-void DroneAlgorithm::tick() {
-  if (finished_) {
-    return;
-  }
-  (void)move_;
+using su = mp_units::si::unit_symbols;
 
-  const DronePosition here = pos_.getPosition();
-  const LidarScanResult hits = lidar_.scan();
+bool nearlySameCm(LengthCm a, LengthCm b) {
+  return std::abs(a.numerical_value_in(su::cm) - b.numerical_value_in(su::cm)) < 1e-6;
+}
 
-  using su = mp_units::si::unit_symbols;
-  const MapBounds b = map_.bounds();
-  const double xy_step = decimalPlacesToStep(b.xy_decimal_places);
-  const double h_step  = decimalPlacesToStep(b.height_decimal_places);
+bool same_xy_height(const DronePosition& a, const DronePosition& b) {
+  return nearlySameCm(a.x, b.x) && nearlySameCm(a.y, b.y) && nearlySameCm(a.height, b.height);
+}
+
+void applyLidarHitsToMap(IBuildingMap& map, const DronePosition& here, const LidarScanResult& hits) {
+  const MapBounds b = map.bounds();
+  const double xy_step  = decimalPlacesToStep(b.xy_decimal_places);
+  const double h_step   = decimalPlacesToStep(b.height_decimal_places);
   const double ray_step = std::min(xy_step, h_step);
 
   for (const LidarHit& h : hits) {
@@ -39,13 +39,40 @@ void DroneAlgorithm::tick() {
       for (double t_cm = ray_step; t_cm < d_cm; t_cm += ray_step) {
         LidarHit slice = h;
         slice.distance = t_cm * su::cm;
-        map_.set(hitToWorldPoint(here, slice), MapValue::Empty);
+        map.set(hitToWorldPoint(here, slice), MapValue::Empty);
       }
     }
-    map_.set(hitToWorldPoint(here, h), MapValue::Occupied);
+    map.set(hitToWorldPoint(here, h), MapValue::Occupied);
+  }
+}
+
+}  // namespace
+
+DroneAlgorithm::DroneAlgorithm(ILidarSensor& lidar, IPositionSensor& pos, IMovementDriver& move,
+                               IBuildingMap& map, LengthCm advance_step)
+    : lidar_(lidar), pos_(pos), move_(move), map_(map), advance_step_(advance_step) {}
+
+void DroneAlgorithm::tick() {
+  if (finished_) {
+    return;
   }
 
-  finished_ = true;
+  const DronePosition before = pos_.getPosition();
+  applyLidarHitsToMap(map_, before, lidar_.scan());
+
+  move_.advance(advance_step_);
+  const DronePosition after = pos_.getPosition();
+
+  if (same_xy_height(before, after)) {
+    ++blocked_advances_;
+    if (blocked_advances_ >= 4) {
+      finished_ = true;
+      return;
+    }
+    move_.rotate(TurnDirection::Right, 90.0 * su::deg);
+  } else {
+    blocked_advances_ = 0;
+  }
 }
 
 }  // namespace dmap
