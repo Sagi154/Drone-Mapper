@@ -12,6 +12,7 @@
 #include "config/MissionConfigParser.h"
 #include "io/ErrorLogger.h"
 
+// Parses default configs, runs one algorithm tick; expects no throw and completion flag set.
 TEST(DroneAlgorithm, TickDoesNotThrow) {
   dmap::SimulationState state;
   dmap::ErrorLogger logger;
@@ -23,4 +24,5 @@ TEST(DroneAlgorithm, TickDoesNotThrow) {
   dmap::MovementMock move(state, drone_cfg, mission);
   dmap::DroneAlgorithm algo(lidar, pos, move, map);
   EXPECT_NO_THROW(algo.tick());
+  EXPECT_TRUE(algo.isFinished());
 }
