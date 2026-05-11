@@ -1,3 +1,7 @@
+// SimulationState.cpp
+// Implements ground-truth cell storage and the coordinate-rounding key scheme
+// that maps floating-point positions to discrete grid cells.
+
 #include "simulation/SimulationState.h"
 
 #include <mp-units/systems/si/unit_symbols.h>

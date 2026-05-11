@@ -63,18 +63,22 @@ class MovementMockTest : public ::testing::Test {
 // rotate
 // -----------------------------------------------------------------------
 
-TEST_F(MovementMockTest, Rotate_Left_IncreasesAngle) {
+// Spec convention: 0=east, 90=south, 180=west, 270=north (clockwise).
+// Right (clockwise) increases the angle; Left (counterclockwise) decreases it.
+
+TEST_F(MovementMockTest, Rotate_Right_IncreasesAngle) {
+  // Facing east (0°), turn right 30° → 30° (south-east direction).
   auto move = makeMove();
-  move.rotate(TurnDirection::Left, 30.0 * su::deg);
+  move.rotate(TurnDirection::Right, 30.0 * su::deg);
   EXPECT_DOUBLE_EQ(ang(), 30.0);
 }
 
-TEST_F(MovementMockTest, Rotate_Right_DecreasesAngle) {
-  // Start at 45°, turn right 30° → 15°.
+TEST_F(MovementMockTest, Rotate_Left_DecreasesAngle) {
+  // Start at 45°, turn left 30° → 15°.
   DronePosition start{0 * su::cm, 0 * su::cm, 0 * su::cm, 45.0 * su::deg};
   state.setDronePosition(start);
   auto move = makeMove();
-  move.rotate(TurnDirection::Right, 30.0 * su::deg);
+  move.rotate(TurnDirection::Left, 30.0 * su::deg);
   EXPECT_DOUBLE_EQ(ang(), 15.0);
 }
 
@@ -91,10 +95,11 @@ TEST_F(MovementMockTest, Rotate_ExceedsMax_Rejected) {
   EXPECT_DOUBLE_EQ(ang(), 0.0);  // unchanged
 }
 
-TEST_F(MovementMockTest, Rotate_NegativeAngle_Rejected) {
+TEST_F(MovementMockTest, Rotate_NegativeAngle_WithLeft_TurnsRight) {
+  // rotate(Left, -30°) is equivalent to rotate(Right, 30°): angle increases.
   auto move = makeMove();
-  move.rotate(TurnDirection::Left, -1.0 * su::deg);
-  EXPECT_DOUBLE_EQ(ang(), 0.0);  // unchanged
+  move.rotate(TurnDirection::Left, -30.0 * su::deg);
+  EXPECT_DOUBLE_EQ(ang(), 30.0);
 }
 
 // -----------------------------------------------------------------------
@@ -111,8 +116,8 @@ TEST_F(MovementMockTest, Advance_East_UpdatesX) {
   EXPECT_NEAR(y(), 100.0, 1e-6);
 }
 
-TEST_F(MovementMockTest, Advance_North_UpdatesY) {
-  // Drone facing north (90°): advance 50cm → y increases by 50.
+TEST_F(MovementMockTest, Advance_South_UpdatesY) {
+  // Drone facing south (90°): advance 50cm → y increases by 50.
   DronePosition start{100.0 * su::cm, 100.0 * su::cm, 50.0 * su::cm, 90.0 * su::deg};
   state.setDronePosition(start);
   auto move = makeMove();
@@ -121,12 +126,16 @@ TEST_F(MovementMockTest, Advance_North_UpdatesY) {
   EXPECT_NEAR(y(), 150.0, 1e-6);
 }
 
-TEST_F(MovementMockTest, Advance_NegativeDistance_Rejected) {
+TEST_F(MovementMockTest, Advance_NegativeDistance_MovesBackward) {
+  // Per spec, negative distance is valid: drone reverses along current heading.
+  // Facing east (0°) and advancing -10 cm should move x from 100 to 90.
   DronePosition start{100.0 * su::cm, 100.0 * su::cm, 50.0 * su::cm, 0.0 * su::deg};
   state.setDronePosition(start);
   auto move = makeMove();
   move.advance(-10.0 * su::cm);
-  EXPECT_NEAR(x(), 100.0, 1e-6);  // unchanged
+  EXPECT_NEAR(x(), 90.0, 1e-6);   // moved west (backward)
+  EXPECT_NEAR(y(), 100.0, 1e-6);  // y unchanged
+  EXPECT_DOUBLE_EQ(ang(), 0.0);   // heading unchanged after backward move
 }
 
 TEST_F(MovementMockTest, Advance_ExceedsMax_Rejected) {

@@ -1,3 +1,6 @@
+// PositionMock.cpp
+// Thin wrapper — delegates entirely to SimulationState::dronePosition().
+
 #include "simulation/PositionMock.h"
 
 namespace dmap {

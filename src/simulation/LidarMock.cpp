@@ -1,11 +1,20 @@
+// LidarMock.cpp
+// For each beam the scan() method:
+//   1. Applies an optional vertical tilt (rotation around local +y).
+//   2. Rotates from local frame to world frame using the drone's heading.
+//   3. Steps along the world-space ray at stepCm() intervals up to Z_max,
+//      querying the ground-truth map at each sample point.
+//   4. Records the first Occupied hit and stops (first-hit-only model).
+//      Hits closer than Z_min report distance=0 (too close to measure accurately).
+
 #include "simulation/LidarMock.h"
 
+#include "common/MathUtils.h"
 #include "common/Point3D.h"
 #include "simulation/CollisionDetector.h"
 
 #include <mp-units/systems/si/unit_symbols.h>
 #include <cmath>
-#include <numbers>
 
 namespace dmap {
 
@@ -21,21 +30,18 @@ LidarScanResult LidarMock::scan(std::optional<AngleDeg> xy_offset,
   // Effective horizontal heading = drone heading + optional offset.
   const double offset_deg =
       xy_offset.has_value() ? xy_offset->numerical_value_in(su::deg) : 0.0;
-  const double h_rad =
-      (pos.xy_angle.numerical_value_in(su::deg) + offset_deg) *
-      (std::numbers::pi / 180.0);
+  const double h_rad = toRad(pos.xy_angle.numerical_value_in(su::deg) + offset_deg);
 
   // Optional vertical tilt applied to the entire cone before heading rotation.
   // Positive = tilts beams upward.  Rotates around the local +y axis.
   const double tilt_rad =
-      height_angle.has_value()
-          ? height_angle->numerical_value_in(su::deg) * (std::numbers::pi / 180.0)
-          : 0.0;
+      height_angle.has_value() ? toRad(height_angle->numerical_value_in(su::deg)) : 0.0;
 
   const double ox = pos.x.numerical_value_in(su::cm);
   const double oy = pos.y.numerical_value_in(su::cm);
   const double oz = pos.height.numerical_value_in(su::cm);
 
+  const double z_min_cm = drone_cfg_.lidar.z_min.numerical_value_in(su::cm);
   const double z_max_cm = drone_cfg_.lidar.z_max.numerical_value_in(su::cm);
   const double step      = stepCm();
 
@@ -70,9 +76,12 @@ LidarScanResult LidarMock::scan(std::optional<AngleDeg> xy_offset,
                            (oy + t * wy) * su::cm,
                            (oz + t * wz) * su::cm};
       if (det.intersectsOccupied(sample)) {
+        // Per spec: hits closer than Z-min cannot be measured accurately;
+        // report distance 0 to signal "too close to measure".
+        const LengthCm reported_dist = (t < z_min_cm) ? 0.0 * su::cm : t * su::cm;
         result.push_back({azimuth_deg * su::deg,
                           elevation_deg * su::deg,
-                          t * su::cm});
+                          reported_dist});
         break;  // first hit only — beam stops at the wall
       }
     }
@@ -84,8 +93,8 @@ LidarScanResult LidarMock::scan(std::optional<AngleDeg> xy_offset,
 double LidarMock::stepCm() const {
   if (!state_.hasBounds()) return 1.0;
   const auto& b = state_.mapBounds();
-  const double xy_step = std::pow(10.0, -static_cast<double>(b.xy_decimal_places));
-  const double h_step  = std::pow(10.0, -static_cast<double>(b.height_decimal_places));
+  const double xy_step = decimalPlacesToStep(b.xy_decimal_places);
+  const double h_step  = decimalPlacesToStep(b.height_decimal_places);
   return std::min(xy_step, h_step);
 }
 

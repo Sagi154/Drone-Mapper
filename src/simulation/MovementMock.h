@@ -1,3 +1,9 @@
+// MovementMock.h
+// Simulates the drone's movement inside the SimulationState.
+// Enforces all physical constraints from DroneConfig (max distances per
+// command, drone body dimensions) and rejects any move that would cause
+// the drone to occupy or pass through an Occupied cell.
+
 #pragma once
 
 #include "config/DroneConfig.h"
@@ -8,27 +14,37 @@
 
 namespace dmap {
 
+// Simulated movement driver.  Implements IMovementDriver so the drone
+// algorithm can call it without knowing it is talking to a simulation.
+// Every move is validated against DroneConfig limits and the ground-truth
+// map before the drone's position in SimulationState is updated.
 class MovementMock final : public IMovementDriver {
  public:
+  // Builds the mock with the drone's capability limits (drone_cfg) and the
+  // mission resolution (mission_cfg), which determines the step size used
+  // when ray-marching through the map to detect obstacles along the path.
   MovementMock(SimulationState& state, DroneConfig drone_cfg,
                const MissionConfig& mission_cfg);
 
+  // Turns the drone left or right by `angle` degrees.
+  // Rejected (no-op) if angle is negative or exceeds max_rotate_per_command.
   void rotate(TurnDirection direction, AngleDeg angle) override;
-  // Moves forward in the direction the drone currently faces.
+
+  // Moves the drone forward along its current heading by `distance` cm.
   // Rejected if: distance is negative, exceeds max_advance_per_command,
-  // or the destination cell is occupied.
+  // or any cell along the path (checked step-by-step) is Occupied.
   void advance(LengthCm distance) override;
-  // Changes altitude. Positive = up, negative = down.
+
+  // Changes the drone's altitude by `distance` cm (positive = up, negative = down).
   // Rejected if: |distance| exceeds max_elevate_per_command,
-  // or the destination cell is occupied.
+  // or any cell along the vertical path is Occupied.
   void elevate(LengthCm distance) override;
 
  private:
   SimulationState& state_;
   DroneConfig cfg_{};
-  // Step sizes derived from mission resolution: 10^(-decimal_places) cm.
-  // Declared before detector_ so they are initialised first and can be
-  // forwarded to the CollisionDetector constructor.
+  // Grid cell sizes in cm, derived from mission resolution (10^(-decimal_places)).
+  // Declared before detector_ to guarantee initialisation order.
   double step_xy_cm_{1.0};
   double step_height_cm_{1.0};
   CollisionDetector detector_;

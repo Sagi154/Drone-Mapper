@@ -1,3 +1,10 @@
+// LidarMock.h
+// Simulated lidar sensor.  For each scan it fires all beams defined by
+// LidarBeamCalculator into the ground-truth map using ray-marching and
+// returns the distance to the first Occupied cell along each beam.
+// Beams that reach Z_max without hitting anything produce no hit record,
+// faithfully modelling the sensor's limited range.
+
 #pragma once
 
 #include "config/DroneConfig.h"
@@ -7,24 +14,31 @@
 
 namespace dmap {
 
+// Simulated lidar that ray-marches through the ground-truth map.
+// Implements ILidarSensor so the drone algorithm treats it like a real sensor.
 class LidarMock final : public ILidarSensor {
  public:
+  // Binds the mock to the shared SimulationState and stores the drone config
+  // (which includes the lidar's FOV parameters).
   LidarMock(SimulationState& state, DroneConfig drone_cfg);
 
-  // Fires all configured lidar beams into the ground-truth map and returns
-  // every first-hit within Z_max range.
-  // xy_offset:    optional extra horizontal rotation added to the drone heading.
-  // height_angle: optional vertical tilt of the entire lidar cone (positive = up).
+  // Fires all configured beams from the drone's current position.
+  // Returns one LidarHit per beam that strikes an Occupied cell within Z_max.
+  //
+  // xy_offset:    optional extra heading rotation applied to the entire cone
+  //               (useful when the lidar is mounted at an angle).
+  // height_angle: optional vertical tilt of the cone (positive = nose up).
   LidarScanResult scan(std::optional<AngleDeg> xy_offset = std::nullopt,
                        std::optional<AngleDeg> height_angle = std::nullopt) override;
 
  private:
   SimulationState& state_;
   DroneConfig drone_cfg_{};
-  LidarBeamCalculator calc_;
+  LidarBeamCalculator calc_;  // pre-built beam directions for this sensor config
 
-  // Returns the ray-march step size in cm derived from the map resolution.
-  // Uses the finer of XY and height cell sizes to guarantee no cell is skipped.
+  // Returns the ray-march step size in cm.
+  // Derived from the map's grid resolution (min of XY and height cell sizes)
+  // so that no occupied cell can be skipped between two consecutive samples.
   double stepCm() const;
 };
 

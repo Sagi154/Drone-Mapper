@@ -1,3 +1,10 @@
+// LidarBeamCalculator.cpp
+// Converts the FOV spec (number of circles, Z-min, spacing D) into
+// concrete unit vectors using spherical coordinates:
+//   theta = elevation angle from the +x axis = atan2(n*D, Z_min)
+//   phi   = azimuth around +x, uniformly distributed across the circle
+// The polar axis is +x (forward), so the center beam is always (1, 0, 0).
+
 #include "simulation/LidarBeamCalculator.h"
 
 #include <mp-units/systems/si/unit_symbols.h>

@@ -26,6 +26,7 @@ int main(int argc, char** argv) {
 
   dmap::SimulationState state;
   (void)dmap::loadGroundTruthMap(root / "map_input.txt", state);
+  state.setDronePosition(mission.initial_position);
 
   dmap::BuildingMap map(mission);
   dmap::LidarMock lidar(state, drone_cfg);

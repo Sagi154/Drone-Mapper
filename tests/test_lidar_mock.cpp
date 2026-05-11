@@ -123,6 +123,40 @@ TEST(LidarMock, XYOffset_RotatesScan_HitAfterRotation) {
 // Multi-circle: wall ahead hits multiple beams
 // -----------------------------------------------------------------------
 
+// -----------------------------------------------------------------------
+// Z-min: hits closer than Z-min report distance=0
+// -----------------------------------------------------------------------
+
+TEST(LidarMock, CenterBeam_HitWithinZMin_ReportsZeroDistance) {
+  SimulationState state;
+  placeAt(state, 0, 0, 0, 0);
+  // Wall at 10cm, but z_min = 20cm → distance must be reported as 0.
+  state.setTruthCell(pt(10, 0, 0), MapValue::Occupied);
+
+  LidarMock lidar(state, makeSingleBeamCfg());  // z_min=20, z_max=120
+  const auto result = lidar.scan();
+  ASSERT_EQ(result.size(), 1u);
+  const double dist_cm = result[0].distance.numerical_value_in(su::cm);
+  EXPECT_DOUBLE_EQ(dist_cm, 0.0);  // too close → unmeasurable → 0
+}
+
+TEST(LidarMock, CenterBeam_HitAtExactlyZMin_ReportsRealDistance) {
+  SimulationState state;
+  placeAt(state, 0, 0, 0, 0);
+  // Wall at exactly z_min (20cm) → real distance reported (not 0).
+  state.setTruthCell(pt(20, 0, 0), MapValue::Occupied);
+
+  LidarMock lidar(state, makeSingleBeamCfg());  // z_min=20
+  const auto result = lidar.scan();
+  ASSERT_EQ(result.size(), 1u);
+  const double dist_cm = result[0].distance.numerical_value_in(su::cm);
+  EXPECT_GT(dist_cm, 0.0);  // at or beyond z_min → measurable distance returned
+}
+
+// -----------------------------------------------------------------------
+// Multi-circle: wall ahead hits multiple beams
+// -----------------------------------------------------------------------
+
 TEST(LidarMock, TwoCircles_WallAhead_MultipleBeamsHit) {
   SimulationState state;
 

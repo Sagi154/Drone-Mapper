@@ -1,11 +1,16 @@
+// CollisionDetector.cpp
+// Implements footprint sampling: the drone's oriented bounding box is
+// subdivided into a grid of sample points at the configured cell resolution,
+// and each point is tested against the ground-truth map.
+
 #include "simulation/CollisionDetector.h"
 #include "simulation/SimulationState.h"
 
+#include "common/MathUtils.h"
 #include "mapping/MapTypes.h"
 
 #include <mp-units/systems/si/unit_symbols.h>
 #include <cmath>
-#include <numbers>
 
 namespace dmap {
 
@@ -27,9 +32,12 @@ bool CollisionDetector::intersectsOccupied(const Point3D& at) const {
   return state_.truthValue(at) == MapValue::Occupied;
 }
 
-// Shared helpers for all three footprint checks.
+// Shared helpers used by all three footprint-check methods.
 namespace {
 
+// Pre-computed geometry of the drone's bounding box in world coordinates.
+// cx/cy/ch = drone centre; fwd/rgt = unit vectors along the heading and
+// its perpendicular; half_l/w/h = half the drone dimensions in each axis.
 struct FootprintGeom {
   double cx, cy, ch;
   double fwd_x, fwd_y;
@@ -37,11 +45,11 @@ struct FootprintGeom {
   double half_l, half_w, half_h;
 };
 
+// Builds FootprintGeom from the drone's current position and config.
 FootprintGeom makeGeom(const dmap::DronePosition& pos,
                        const dmap::DroneConfig& cfg) {
   namespace su = mp_units::si::unit_symbols;
-  const double angle_rad =
-      pos.xy_angle.numerical_value_in(su::deg) * (std::numbers::pi / 180.0);
+  const double angle_rad = toRad(pos.xy_angle.numerical_value_in(su::deg));
   return {
       pos.x.numerical_value_in(su::cm),
       pos.y.numerical_value_in(su::cm),
@@ -55,10 +63,14 @@ FootprintGeom makeGeom(const dmap::DronePosition& pos,
 }
 
 // Number of sample points needed to cover [-half, +half] in steps of `step`.
-// Using round avoids floating-point accumulation: each offset is computed as
-// (-half + i * step), not by repeated addition.
+// ceil ensures the span is always rounded OUTWARD: the last sample lands at or
+// beyond +half, so the outermost grid cell the drone physically overlaps is
+// never skipped.  Using round instead could truncate the span inward and miss
+// a wall cell that the drone's edge actually touches.
+// Each offset is computed from the index (not by repeated addition) to avoid
+// floating-point accumulation.
 int nSteps(double half, double step) {
-  return static_cast<int>(std::round(2.0 * half / step)) + 1;
+  return static_cast<int>(std::ceil(2.0 * half / step)) + 1;
 }
 
 // i-th offset value in [-half, +half], computed exactly from the index.
