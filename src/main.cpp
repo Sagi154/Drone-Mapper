@@ -23,10 +23,12 @@ int main(int argc, char** argv) {
   dmap::log::info("drone_mapper scaffold starting");
 
   dmap::ErrorLogger logger;
+  // Config parse errors are recoverable (parsers keep defaults and log details).
   const auto drone_cfg = dmap::parseDroneConfig(root / "drone_config.txt", logger);
   const auto mission = dmap::parseMissionConfig(root / "mission_config.txt", logger);
 
   dmap::SimulationState state;
+  // Map file open failure is unrecoverable for startup and must abort.
   const bool map_loaded = dmap::loadGroundTruthMap(root / "map_input.txt", state, logger);
   if (!map_loaded) {
     std::cerr << "unrecoverable error: failed to load map_input.txt\n";
