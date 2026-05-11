@@ -16,22 +16,7 @@
 
 namespace dmap {
 
-// Describes the valid flight volume and the grid resolution used to
-// discretise it.  Populated from MissionConfig after loading the map file.
-// Any position outside the box returns MapValue::OutOfBounds from truthValue().
-struct MapBounds {
-  LengthCm min_x{};
-  LengthCm max_x{};
-  LengthCm min_y{};
-  LengthCm max_y{};
-  LengthCm min_height{};
-  LengthCm max_height{};
-  // Number of decimal places used to round coordinates to a grid cell.
-  // Cell size in cm = 10^(-decimal_places).
-  // e.g. xy_decimal_places=2 → each cell is 0.01 cm wide.
-  std::int32_t xy_decimal_places{4};
-  std::int32_t height_decimal_places{4};
-};
+// MapBounds is defined in mapping/MapTypes.h (shared with I/O and BuildingMap).
 
 // Owns the entire simulated world state: drone position + ground-truth map.
 // Only simulation components (CollisionDetector, LidarMock, MovementMock)
