@@ -2,6 +2,7 @@
 #include "common/Logger.h"
 #include "config/DroneConfigParser.h"
 #include "config/MissionConfigParser.h"
+#include "io/ErrorLogger.h"
 #include "io/MapFileReader.h"
 #include "io/MapFileWriter.h"
 #include "mapping/BuildingMap.h"
@@ -21,11 +22,13 @@ int main(int argc, char** argv) {
 
   dmap::log::info("drone_mapper scaffold starting");
 
-  const auto drone_cfg = dmap::parseDroneConfig(root / "drone_config.txt");
-  const auto mission = dmap::parseMissionConfig(root / "mission_config.txt");
+  dmap::ErrorLogger logger;
+  const auto drone_cfg = dmap::parseDroneConfig(root / "drone_config.txt", logger);
+  const auto mission = dmap::parseMissionConfig(root / "mission_config.txt", logger);
 
   dmap::SimulationState state;
-  (void)dmap::loadGroundTruthMap(root / "map_input.txt", state);
+  (void)dmap::loadGroundTruthMap(root / "map_input.txt", state, logger);
+  logger.flushIfNeeded(root / "input_errors.txt");
   state.setDronePosition(mission.initial_position);
 
   dmap::BuildingMap map(mission);
