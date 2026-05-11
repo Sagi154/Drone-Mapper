@@ -1,5 +1,8 @@
 #include "config/DroneConfigParser.h"
 #include "config/MissionConfigParser.h"
+#include "io/MapFileReader.h"
+#include "mapping/MapTypes.h"
+#include "simulation/SimulationState.h"
 
 #include <filesystem>
 #include <fstream>
@@ -116,4 +119,41 @@ TEST(ConfigParser, MissionConfigMissingFileReturnsDefaults) {
   EXPECT_NEAR(cfg.initial_position.x.numerical_value_in(su::cm), 0.0, 1e-9);
   EXPECT_EQ(cfg.xy_decimal_places, 2);
   EXPECT_EQ(cfg.height_decimal_places, 2);
+}
+
+// Scenario: map_input contains bounds metadata and sparse occupied cells.
+// Expected: bounds are set in SimulationState and listed occupied cells are loaded.
+// Why: validates the main map_input parser contract used by simulation components.
+TEST(ConfigParser, MapInputLoadsBoundsAndOccupiedCells) {
+  const auto path = writeTempFile(
+      "dmap_map_input_test.txt",
+      "# bounds format: min_x max_x min_y max_y min_h max_h xy_dp h_dp\n"
+      "bounds 0 500 0 400 0 300 1 1\n"
+      "occupied 100.0 200.0 0.0\n"
+      "occupied 100.0 201.0 0.0\n");
+
+  dmap::SimulationState state;
+  ASSERT_TRUE(dmap::loadGroundTruthMap(path, state));
+  ASSERT_TRUE(state.hasBounds());
+
+  const auto bounds = state.mapBounds();
+  EXPECT_NEAR(bounds.min_x.numerical_value_in(su::cm), 0.0, 1e-9);
+  EXPECT_NEAR(bounds.max_x.numerical_value_in(su::cm), 500.0, 1e-9);
+  EXPECT_NEAR(bounds.min_y.numerical_value_in(su::cm), 0.0, 1e-9);
+  EXPECT_NEAR(bounds.max_y.numerical_value_in(su::cm), 400.0, 1e-9);
+  EXPECT_EQ(bounds.xy_decimal_places, 1);
+  EXPECT_EQ(bounds.height_decimal_places, 1);
+
+  EXPECT_EQ(state.truthValue(dmap::Point3D{100.0 * su::cm, 200.0 * su::cm, 0.0 * su::cm}),
+            dmap::MapValue::Occupied);
+  EXPECT_EQ(state.truthValue(dmap::Point3D{100.0 * su::cm, 202.0 * su::cm, 0.0 * su::cm}),
+            dmap::MapValue::Empty);
+}
+
+// Scenario: map_input file path does not exist.
+// Expected: loader returns false without crashing.
+// Why: caller uses this return value to detect missing required input.
+TEST(ConfigParser, MapInputMissingFileReturnsFalse) {
+  dmap::SimulationState state;
+  EXPECT_FALSE(dmap::loadGroundTruthMap("nope.txt", state));
 }

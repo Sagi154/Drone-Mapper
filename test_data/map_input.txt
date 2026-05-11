@@ -1,0 +1,8 @@
+# bounds: min_x max_x min_y max_y min_height max_height xy_dp height_dp
+bounds 0 500 0 400 0 300 1 1
+
+# sparse occupied cells (all unstored in-bounds cells are treated as Empty)
+occupied 100.0 200.0 0.0
+occupied 100.0 201.0 0.0
+occupied 100.0 202.0 0.0
+occupied 450.0 50.0 10.0
