@@ -71,3 +71,6 @@ Testing/
 # JetBrains IDE
 .idea/
 cmake-build-*/
+
+# Cursor IDE
+.cursor/

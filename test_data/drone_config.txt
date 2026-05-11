@@ -1,0 +1,13 @@
+# Drone capabilities
+min_passable_width = 30
+min_passable_length = 30
+min_passable_height = 20
+max_rotate = 90
+max_advance = 100
+max_elevate = 50
+
+# Lidar
+lidar_z_min = 20
+lidar_z_max = 120
+lidar_d = 2.5
+lidar_fov_circles = 5
