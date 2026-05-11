@@ -17,5 +17,9 @@ target_include_directories(drone_mapper_tests PRIVATE "${CMAKE_SOURCE_DIR}/src")
 target_link_libraries(drone_mapper_tests PRIVATE drone_mapper_lib GTest::gtest
                                                   GTest::gtest_main)
 
+# Path to committed sample inputs used by end-to-end parser tests.
+target_compile_definitions(
+  drone_mapper_tests PRIVATE "TEST_DATA_DIR=\"${CMAKE_SOURCE_DIR}/test_data\"")
+
 include(GoogleTest)
 gtest_discover_tests(drone_mapper_tests)
