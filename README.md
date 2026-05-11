@@ -14,11 +14,14 @@ The SFML visualizer is **off** by default (no SFML in vcpkg). To build `drone_vi
 
 ## CI (Docker)
 
-Linux CI uses the repo-root `Dockerfile` (Ubuntu 24.04 devcontainers C++ image + vcpkg manifest). GitHub Actions runs `docker build`, which configures with the vcpkg toolchain, builds the library, `drone_mapper`, and tests (not the SFML visualizer), and runs `ctest`.
+Linux CI uses the repo-root `Dockerfile` (Ubuntu 24.04 devcontainers C++ image + vcpkg manifest). GitHub Actions runs `docker build` to configure with the vcpkg toolchain and build the library, `drone_mapper`, and the test binary (not the SFML visualizer). A separate workflow step then invokes `ctest` against the built image, so each gtest case surfaces individually in the Actions log.
 
 Locally (Docker Desktop or Linux):
 
-`docker build -t drone-mapper-ci .`
+```
+docker build -t drone-mapper-ci .
+docker run --rm drone-mapper-ci ctest --test-dir build/ci --output-on-failure
+```
 
 ## Run
 
