@@ -5,9 +5,11 @@
 #include "mapping/BuildingMap.h"
 
 #include "config/MissionConfigParser.h"
+#include "io/ErrorLogger.h"
 
 TEST(Scorer, ReturnsStubValue) {
-  const auto mission = dmap::parseMissionConfig("nope.txt");
+  dmap::ErrorLogger logger;
+  const auto mission = dmap::parseMissionConfig("nope.txt", logger);
   dmap::BuildingMap a(mission);
   dmap::BuildingMap b(mission);
   dmap::Scorer scorer;

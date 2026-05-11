@@ -4,9 +4,11 @@
 #include <gtest/gtest.h>
 
 #include "config/MissionConfigParser.h"
+#include "io/ErrorLogger.h"
 
 TEST(BuildingMap, NotMappedByDefault) {
-  const auto mission = dmap::parseMissionConfig("nonexistent_mission_config.txt");
+  dmap::ErrorLogger logger;
+  const auto mission = dmap::parseMissionConfig("nonexistent_mission_config.txt", logger);
   dmap::BuildingMap map(mission);
   dmap::Point3D p{};
   EXPECT_EQ(map.get(p), dmap::MapValue::NotMapped);
