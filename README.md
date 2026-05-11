@@ -10,6 +10,16 @@ Set `VCPKG_ROOT` and configure with the presets in `CMakePresets.json`, or pass:
 
 Then `cmake --build build`.
 
+To skip the SFML visualizer target (library and tests still build), add `-DDRONE_MAPPER_BUILD_VISUALIZER=OFF` to the `cmake` configure line.
+
+## CI (Docker)
+
+Linux CI uses the repo-root `Dockerfile` (Ubuntu 24.04 devcontainers C++ image + vcpkg manifest). GitHub Actions runs `docker build`, which configures with the vcpkg toolchain, builds the library, `drone_mapper`, and tests (not the SFML visualizer), and runs `ctest`.
+
+Locally (Docker Desktop or Linux):
+
+`docker build -t drone-mapper-ci .`
+
 ## Run
 
 `drone_mapper [<input_output_files_path>]`

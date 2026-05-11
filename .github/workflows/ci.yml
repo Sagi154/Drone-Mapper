@@ -1,0 +1,18 @@
+# Runs the same Linux + vcpkg pipeline as Dockerfile (configure, build, unit tests).
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  docker-build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build CI image (configure, build, ctest)
+        run: docker build --progress=plain -t drone-mapper-ci:latest .
