@@ -44,13 +44,31 @@ jobs:
             --cache-to "type=gha,mode=max,scope=${CACHE_SCOPE}" \
             . 2>&1 | tee ci-artifacts/docker-build.log
 
-      # Run all gtest suites via ctest. `--output-on-failure` prints the failing case;
-      # `gtest_discover_tests` registers one ctest entry per TEST(...) so the GitHub
-      # Actions log lists them individually under this step.
-      - name: Run tests (ctest)
+      # Run each labeled ctest suite separately. The labels are assigned in tests/CMakeLists.txt.
+      - name: Run config tests
         run: |
           docker run --rm drone-mapper-ci:latest \
-            ctest --test-dir build/ci --output-on-failure
+            ctest --test-dir build/ci -L config --output-on-failure
+
+      - name: Run mapping tests
+        run: |
+          docker run --rm drone-mapper-ci:latest \
+            ctest --test-dir build/ci -L mapping --output-on-failure
+
+      - name: Run algorithm tests
+        run: |
+          docker run --rm drone-mapper-ci:latest \
+            ctest --test-dir build/ci -L algorithm --output-on-failure
+
+      - name: Run simulation tests
+        run: |
+          docker run --rm drone-mapper-ci:latest \
+            ctest --test-dir build/ci -L simulation --output-on-failure
+
+      - name: Run integration tests
+        run: |
+          docker run --rm drone-mapper-ci:latest \
+            ctest --test-dir build/ci -L integration --output-on-failure
 
       - name: Upload CI logs on failure
         if: failure()

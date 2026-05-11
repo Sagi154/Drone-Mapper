@@ -23,6 +23,16 @@ docker build -t drone-mapper-ci .
 docker run --rm drone-mapper-ci ctest --test-dir build/ci --output-on-failure
 ```
 
+Test suites can also be run separately by CTest label:
+
+```
+docker run --rm drone-mapper-ci ctest --test-dir build/ci -L config --output-on-failure
+docker run --rm drone-mapper-ci ctest --test-dir build/ci -L mapping --output-on-failure
+docker run --rm drone-mapper-ci ctest --test-dir build/ci -L algorithm --output-on-failure
+docker run --rm drone-mapper-ci ctest --test-dir build/ci -L simulation --output-on-failure
+docker run --rm drone-mapper-ci ctest --test-dir build/ci -L integration --output-on-failure
+```
+
 ## Run
 
 `drone_mapper [<input_output_files_path>]`
