@@ -33,10 +33,20 @@ jobs:
         env:
           CACHE_SCOPE: drone-mapper-ci
         run: |
+          set -o pipefail
+          mkdir -p ci-artifacts
           docker buildx build \
             --progress=plain \
             --load \
             --tag drone-mapper-ci:latest \
             --cache-from "type=gha,scope=${CACHE_SCOPE}" \
             --cache-to "type=gha,mode=max,scope=${CACHE_SCOPE}" \
-            .
+            . 2>&1 | tee ci-artifacts/docker-build.log
+
+      - name: Upload CI logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-docker-build-log
+          path: ci-artifacts/docker-build.log
+          if-no-files-found: warn
