@@ -3,6 +3,8 @@ name: CI
 
 permissions:
   contents: read
+  # Docker BuildKit cache backend (cache-to type=gha) uses the Actions cache API.
+  actions: write
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -23,5 +25,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # BuildKit + GitHub Actions cache backend speeds up repeated vcpkg/CMake layers.
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Build CI image (configure, build, ctest)
-        run: docker build --progress=plain -t drone-mapper-ci:latest .
+        env:
+          CACHE_SCOPE: drone-mapper-ci
+        run: |
+          docker buildx build \
+            --progress=plain \
+            --load \
+            --tag drone-mapper-ci:latest \
+            --cache-from "type=gha,scope=${CACHE_SCOPE}" \
+            --cache-to "type=gha,mode=max,scope=${CACHE_SCOPE}" \
+            .
