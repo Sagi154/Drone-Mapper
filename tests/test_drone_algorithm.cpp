@@ -10,11 +10,13 @@
 
 #include "config/DroneConfigParser.h"
 #include "config/MissionConfigParser.h"
+#include "io/ErrorLogger.h"
 
 TEST(DroneAlgorithm, TickDoesNotThrow) {
   dmap::SimulationState state;
-  const auto drone_cfg = dmap::parseDroneConfig("nonexistent_drone_config.txt");
-  const auto mission = dmap::parseMissionConfig("nonexistent_mission_config.txt");
+  dmap::ErrorLogger logger;
+  const auto drone_cfg = dmap::parseDroneConfig("nonexistent_drone_config.txt", logger);
+  const auto mission = dmap::parseMissionConfig("nonexistent_mission_config.txt", logger);
   dmap::BuildingMap map(mission);
   dmap::LidarMock lidar(state, drone_cfg);
   dmap::PositionMock pos(state);
