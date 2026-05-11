@@ -2,8 +2,11 @@
 
 ## What this feature does
 
-This change introduces a concrete text format for `drone_config.txt` and a real parser
-implementation in `src/config/DroneConfigParser.cpp`.
+This change introduces concrete text formats for `drone_config.txt` and
+`mission_config.txt`, with real parser implementations in:
+
+- `src/config/DroneConfigParser.cpp`
+- `src/config/MissionConfigParser.cpp`
 
 It also adds `src/config/ConfigParseUtil.h` to centralize line handling shared by
 current and upcoming parsers:
@@ -11,7 +14,7 @@ current and upcoming parsers:
 - trim leading/trailing whitespace
 - strip inline `#` comments
 - parse `key = value` lines
-- split whitespace tokens (for later `map_input.txt` parsing)
+- split whitespace tokens (for map-input style parsing)
 
 This exists to keep parser files focused on mapping keys to config fields, rather
 than duplicating string-cleanup logic in every parser.
@@ -34,9 +37,13 @@ than duplicating string-cleanup logic in every parser.
 - `dmap::parseDroneConfig(path)` in `src/config/DroneConfigParser.h`
   - Input: filesystem path to `drone_config.txt`
   - Output: `DroneConfig`
+- `dmap::parseMissionConfig(path)` in `src/config/MissionConfigParser.h`
+  - Input: filesystem path to `mission_config.txt`
+  - Output: `MissionConfig`
 - `dmap::config_parse::*` helpers in `src/config/ConfigParseUtil.h`
   - Reused by future parser implementations to keep behavior consistent.
 
 ## Example file
 
-See `test_data/drone_config.txt` for a complete sample of the current format.
+See `test_data/drone_config.txt` and `test_data/mission_config.txt` for complete
+samples of the current formats.

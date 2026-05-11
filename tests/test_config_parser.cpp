@@ -71,9 +71,49 @@ TEST(ConfigParser, DroneConfigMissingKeysKeepDefaults) {
   EXPECT_NEAR(cfg.max_advance_per_command.numerical_value_in(su::cm), 0.0, 1e-9);
 }
 
-// Scenario: mission parser smoke test for current stub behavior.
-// Expected: parser call does not throw.
-// Why: keeps baseline test coverage while mission parser is still pending.
+// Scenario: a full mission_config file contains boundaries, start pose, and resolution.
+// Expected: every supported mission key is parsed into MissionConfig fields.
+// Why: validates the happy path for mission parser and file format.
 TEST(ConfigParser, MissionConfigParses) {
-  EXPECT_NO_THROW(dmap::parseMissionConfig("nope.txt"));
+  const auto path = writeTempFile(
+      "dmap_mission_config_test.txt",
+      "# Mission boundaries\n"
+      "min_x = 0\n"
+      "max_x = 500\n"
+      "min_y = 0\n"
+      "max_y = 400\n"
+      "min_height = 0\n"
+      "max_height = 300\n"
+      "start_x = 100\n"
+      "start_y = 200\n"
+      "start_height = 50\n"
+      "start_angle = 15\n"
+      "xy_decimal_places = 1\n"
+      "height_decimal_places = 2\n");
+
+  const auto cfg = dmap::parseMissionConfig(path);
+  EXPECT_NEAR(cfg.min_x.numerical_value_in(su::cm), 0.0, 1e-9);
+  EXPECT_NEAR(cfg.max_x.numerical_value_in(su::cm), 500.0, 1e-9);
+  EXPECT_NEAR(cfg.min_y.numerical_value_in(su::cm), 0.0, 1e-9);
+  EXPECT_NEAR(cfg.max_y.numerical_value_in(su::cm), 400.0, 1e-9);
+  EXPECT_NEAR(cfg.min_height.numerical_value_in(su::cm), 0.0, 1e-9);
+  EXPECT_NEAR(cfg.max_height.numerical_value_in(su::cm), 300.0, 1e-9);
+  EXPECT_NEAR(cfg.initial_position.x.numerical_value_in(su::cm), 100.0, 1e-9);
+  EXPECT_NEAR(cfg.initial_position.y.numerical_value_in(su::cm), 200.0, 1e-9);
+  EXPECT_NEAR(cfg.initial_position.height.numerical_value_in(su::cm), 50.0, 1e-9);
+  EXPECT_NEAR(cfg.initial_position.xy_angle.numerical_value_in(su::deg), 15.0, 1e-9);
+  EXPECT_EQ(cfg.xy_decimal_places, 1);
+  EXPECT_EQ(cfg.height_decimal_places, 2);
+}
+
+// Scenario: parser is called with a missing mission_config file.
+// Expected: parser returns default values without throwing.
+// Why: assignment requires graceful handling of missing/bad input files.
+TEST(ConfigParser, MissionConfigMissingFileReturnsDefaults) {
+  const auto cfg = dmap::parseMissionConfig("nope.txt");
+  EXPECT_NEAR(cfg.min_x.numerical_value_in(su::cm), 0.0, 1e-9);
+  EXPECT_NEAR(cfg.max_x.numerical_value_in(su::cm), 0.0, 1e-9);
+  EXPECT_NEAR(cfg.initial_position.x.numerical_value_in(su::cm), 0.0, 1e-9);
+  EXPECT_EQ(cfg.xy_decimal_places, 2);
+  EXPECT_EQ(cfg.height_decimal_places, 2);
 }
