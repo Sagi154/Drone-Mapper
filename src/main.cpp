@@ -27,8 +27,11 @@ int main(int argc, char** argv) {
   const auto mission = dmap::parseMissionConfig(root / "mission_config.txt", logger);
 
   dmap::SimulationState state;
-  (void)dmap::loadGroundTruthMap(root / "map_input.txt", state, logger);
-  logger.flushIfNeeded(root / "input_errors.txt");
+  const bool map_loaded = dmap::loadGroundTruthMap(root / "map_input.txt", state, logger);
+  if (!map_loaded) {
+    std::cerr << "unrecoverable error: failed to load map_input.txt\n";
+    return 1;
+  }
   state.setDronePosition(mission.initial_position);
 
   dmap::BuildingMap map(mission);
@@ -43,6 +46,7 @@ int main(int argc, char** argv) {
     return 1;
   }
 
+  logger.flushIfNeeded(root / "input_errors.txt");
   dmap::log::info("drone_mapper scaffold finished");
   return 0;
 }

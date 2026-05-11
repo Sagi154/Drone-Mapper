@@ -216,6 +216,32 @@ TEST(ConfigParser, ErrorLoggerDroneConfigUnknownKeyLogged) {
   EXPECT_NE(logger.lines().front().find("unknown key \"turbo_mode\""), std::string::npos);
 }
 
+// Scenario: drone config has non-empty malformed key/value syntax.
+// Expected: parser logs bad key/value format and continues.
+// Why: recovered line-format errors must be reported to input_errors.txt.
+TEST(ConfigParser, ErrorLoggerDroneConfigMalformedKeyValueLogged) {
+  const auto path = writeTempFile("dmap_drone_config_bad_kv_test.txt",
+                                  "max_rotate 90\n");
+
+  dmap::ErrorLogger logger;
+  (void)dmap::parseDroneConfig(path, logger);
+  ASSERT_EQ(logger.size(), 1U);
+  EXPECT_NE(logger.lines().front().find("bad key/value format"), std::string::npos);
+}
+
+// Scenario: mission config has non-empty malformed key/value syntax.
+// Expected: parser logs bad key/value format and continues.
+// Why: recovered line-format errors must be reported to input_errors.txt.
+TEST(ConfigParser, ErrorLoggerMissionConfigMalformedKeyValueLogged) {
+  const auto path = writeTempFile("dmap_mission_config_bad_kv_test.txt",
+                                  "min_x 0\n");
+
+  dmap::ErrorLogger logger;
+  (void)dmap::parseMissionConfig(path, logger);
+  ASSERT_EQ(logger.size(), 1U);
+  EXPECT_NE(logger.lines().front().find("bad key/value format"), std::string::npos);
+}
+
 // Scenario: map_input has an occupied record with wrong token count.
 // Expected: loader logs a bad-record entry and skips the line.
 // Why: malformed records should not stop the loader.

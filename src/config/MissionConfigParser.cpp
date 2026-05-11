@@ -33,6 +33,13 @@ MissionConfig parseMissionConfig(const std::filesystem::path& path, ErrorLogger&
     // Accept "key = value" lines with optional whitespace and inline comments.
     const auto kv = config_parse::parseKeyValueLine(line);
     if (!kv.has_value()) {
+      // Blank/comment-only lines are valid to ignore. Non-empty malformed lines are recovered.
+      const std::string cleaned = config_parse::stripCommentAndTrim(line);
+      if (!cleaned.empty()) {
+        std::ostringstream msg;
+        msg << "[mission_config] line " << line_num << ": bad key/value format — skipped";
+        logger.add(msg.str());
+      }
       continue;
     }
 
