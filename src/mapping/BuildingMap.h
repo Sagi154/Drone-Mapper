@@ -5,6 +5,7 @@
 #include "mapping/SparseKey.h"
 
 #include <unordered_map>
+#include <vector>
 
 namespace dmap {
 
@@ -14,6 +15,9 @@ class BuildingMap final : public IBuildingMap {
 
   MapValue get(const Point3D& p) const override;
   void set(const Point3D& p, MapValue v) override;
+
+  MapBounds bounds() const override;
+  std::vector<CellEntry> allCells() const override;
 
  private:
   MissionConfig mission_{};
