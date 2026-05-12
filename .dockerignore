@@ -1,0 +1,19 @@
+# Shrink docker build context; keep sources + vcpkg manifest only.
+.git
+.github
+.idea
+.vs
+**/CMakeFiles
+cmake-build-*
+**/cmake-build-*
+build
+**/build
+out
+visualizer
+*.pdf
+docs
+data
+test_data
+ASSESSMENT.md
+bonus.txt
+LICENSE
