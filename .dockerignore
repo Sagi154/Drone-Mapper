@@ -13,7 +13,6 @@ visualizer
 *.pdf
 docs
 data
-test_data
 ASSESSMENT.md
 bonus.txt
 LICENSE

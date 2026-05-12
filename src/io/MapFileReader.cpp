@@ -15,6 +15,9 @@ namespace su = mp_units::si::unit_symbols;
 
 bool loadGroundTruthMap(const std::filesystem::path& path, SimulationState& state,
                         ErrorLogger& logger) {
+  // Recovery contract:
+  // - open failure is unrecoverable for callers (returns false).
+  // - parse problems inside an opened file are recoverable (log + continue).
   state.clearGroundTruth();
   std::ifstream in(path);
   if (!in) {

@@ -257,3 +257,33 @@ TEST(ConfigParser, ErrorLoggerMapInputBadRecordLogged) {
   ASSERT_EQ(logger.size(), 1U);
   EXPECT_NE(logger.lines().front().find("bad \"occupied\" record"), std::string::npos);
 }
+
+#ifndef TEST_DATA_DIR
+#error TEST_DATA_DIR must be defined by CMake (tests/CMakeLists.txt) for sample-file tests.
+#endif
+
+// Scenario: committed test_data sample files load end-to-end like main startup.
+// Expected: loadGroundTruthMap succeeds; ErrorLogger stays empty; a few fields match samples.
+// Why: milestone gate — sane real files parse without recoverable logged errors.
+TEST(ConfigParser, StartupLoadsRepositoryTestData) {
+  const std::filesystem::path root(TEST_DATA_DIR);
+
+  dmap::ErrorLogger logger;
+  const auto drone = dmap::parseDroneConfig(root / "drone_config.txt", logger);
+  const auto mission = dmap::parseMissionConfig(root / "mission_config.txt", logger);
+
+  dmap::SimulationState state;
+  ASSERT_TRUE(dmap::loadGroundTruthMap(root / "map_input.txt", state, logger));
+  EXPECT_TRUE(logger.empty());
+
+  EXPECT_NEAR(drone.max_rotate_per_command.numerical_value_in(su::deg), 90.0, 1e-9);
+  EXPECT_EQ(drone.lidar.fov_circles, 5);
+
+  EXPECT_NEAR(mission.max_x.numerical_value_in(su::cm), 500.0, 1e-9);
+  EXPECT_NEAR(mission.initial_position.x.numerical_value_in(su::cm), 100.0, 1e-9);
+
+  ASSERT_TRUE(state.hasBounds());
+  EXPECT_NEAR(state.mapBounds().max_x.numerical_value_in(su::cm), 500.0, 1e-9);
+  EXPECT_EQ(state.truthValue(dmap::Point3D{100.0 * su::cm, 200.0 * su::cm, 0.0 * su::cm}),
+            dmap::MapValue::Occupied);
+}
