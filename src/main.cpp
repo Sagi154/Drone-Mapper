@@ -38,8 +38,17 @@ int main(int argc, char** argv) {
   dmap::LidarMock lidar(state, drone_cfg);
   dmap::PositionMock pos(state);
   dmap::MovementMock move(state, drone_cfg, mission);
-  dmap::DroneAlgorithm algo(lidar, pos, move, map);
-  algo.tick();
+  dmap::DroneAlgorithm algo(lidar, pos, move, map, drone_cfg.max_advance_per_command);
+  int ticks = 0;
+  constexpr int kMaxTicks = 1'000'000;
+  while (!algo.isFinished() && ticks < kMaxTicks) {
+    algo.tick();
+    ++ticks;
+  }
+  if (ticks >= kMaxTicks) {
+    std::cerr << "unrecoverable error: drone algorithm exceeded tick limit\n";
+    return 1;
+  }
 
   if (!dmap::writeBuildingMap(root / "map_output.txt", map)) {
     std::cerr << "failed to write map_output.txt\n";
