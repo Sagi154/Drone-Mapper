@@ -1,4 +1,14 @@
 cmake_minimum_required(VERSION 3.21)
+
+# vcpkg runs manifest install while processing project(); SFML must not be in the default
+# dependency set or headless CI still builds it. Tie the optional vcpkg feature to this flag.
+option(DRONE_MAPPER_BUILD_VISUALIZER "Build SFML drone_visualizer target" OFF)
+if(DRONE_MAPPER_BUILD_VISUALIZER)
+  set(VCPKG_MANIFEST_FEATURES "visualizer" CACHE STRING "vcpkg manifest features" FORCE)
+else()
+  set(VCPKG_MANIFEST_FEATURES "" CACHE STRING "vcpkg manifest features" FORCE)
+endif()
+
 project(DroneMapper LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -30,5 +40,7 @@ find_package(GTest CONFIG REQUIRED)
 enable_testing()
 add_subdirectory(tests)
 
-find_package(SFML CONFIG REQUIRED COMPONENTS Graphics Window System)
-add_subdirectory(visualizer)
+if(DRONE_MAPPER_BUILD_VISUALIZER)
+  find_package(SFML CONFIG REQUIRED COMPONENTS Graphics Window System)
+  add_subdirectory(visualizer)
+endif()

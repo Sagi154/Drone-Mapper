@@ -1,5 +1,5 @@
 // MapFileReader.cpp
-// Loads the simulator's ground-truth map: bounds metadata and occupied cells.
+// Loads the simulator's ground-truth map: bounds metadata and occupied / empty cells.
 
 #include "io/MapFileReader.h"
 
@@ -76,6 +76,19 @@ bool loadGroundTruthMap(const std::filesystem::path& path, SimulationState& stat
                                    std::stod(tokens[2]) * su::cm,
                                    std::stod(tokens[3]) * su::cm},
                            MapValue::Occupied);
+      } else if (tokens[0] == "empty") {
+        if (tokens.size() != 4) {
+          std::ostringstream msg;
+          msg << "[map_input] line " << line_num
+              << ": bad \"empty\" record (expected 4 tokens, got " << tokens.size()
+              << ") — skipped";
+          logger.add(msg.str());
+          continue;
+        }
+        state.setTruthCell(Point3D{std::stod(tokens[1]) * su::cm,
+                                   std::stod(tokens[2]) * su::cm,
+                                   std::stod(tokens[3]) * su::cm},
+                           MapValue::Empty);
       } else {
         std::ostringstream msg;
         msg << "[map_input] line " << line_num << ": unknown record type \"" << tokens[0]

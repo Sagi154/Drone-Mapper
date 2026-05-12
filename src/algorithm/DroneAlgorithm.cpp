@@ -1,16 +1,78 @@
+// DroneAlgorithm.cpp
+// Each tick: lidar scan into the building map (empty along rays, occupied at hits), then one
+// advance. If the move does not change XYH, rotate 90° right; four consecutive blocked advances
+// end the run (local horizontal dead-end at the current height).
+
 #include "algorithm/DroneAlgorithm.h"
+
+#include "common/MathUtils.h"
+#include "mapping/MapTypes.h"
+#include "sensors/LidarTypes.h"
+
+#include <algorithm>
+#include <cmath>
+#include <mp-units/systems/si/unit_symbols.h>
 
 namespace dmap {
 
+namespace {
+
+namespace su = mp_units::si::unit_symbols;
+
+bool nearlySameCm(LengthCm a, LengthCm b) {
+  return std::abs(a.numerical_value_in(su::cm) - b.numerical_value_in(su::cm)) < 1e-6;
+}
+
+bool same_xy_height(const DronePosition& a, const DronePosition& b) {
+  return nearlySameCm(a.x, b.x) && nearlySameCm(a.y, b.y) && nearlySameCm(a.height, b.height);
+}
+
+void applyLidarHitsToMap(IBuildingMap& map, const DronePosition& here, const LidarScanResult& hits) {
+  const MapBounds b = map.bounds();
+  const double xy_step  = decimalPlacesToStep(b.xy_decimal_places);
+  const double h_step   = decimalPlacesToStep(b.height_decimal_places);
+  const double ray_step = std::min(xy_step, h_step);
+
+  for (const LidarHit& h : hits) {
+    const double d_cm = h.distance.numerical_value_in(su::cm);
+    if (d_cm > 0.0) {
+      for (double t_cm = ray_step; t_cm < d_cm; t_cm += ray_step) {
+        LidarHit slice = h;
+        slice.distance = t_cm * su::cm;
+        map.set(hitToWorldPoint(here, slice), MapValue::Empty);
+      }
+    }
+    map.set(hitToWorldPoint(here, h), MapValue::Occupied);
+  }
+}
+
+}  // namespace
+
 DroneAlgorithm::DroneAlgorithm(ILidarSensor& lidar, IPositionSensor& pos, IMovementDriver& move,
-                               IBuildingMap& map)
-    : lidar_(lidar), pos_(pos), move_(move), map_(map) {}
+                               IBuildingMap& map, LengthCm advance_step)
+    : lidar_(lidar), pos_(pos), move_(move), map_(map), advance_step_(advance_step) {}
 
 void DroneAlgorithm::tick() {
-  (void)pos_;
-  (void)move_;
-  (void)map_;
-  (void)lidar_.scan();
+  if (finished_) {
+    return;
+  }
+
+  const DronePosition before = pos_.getPosition();
+  applyLidarHitsToMap(map_, before, lidar_.scan());
+
+  move_.advance(advance_step_);
+  const DronePosition after = pos_.getPosition();
+
+  if (same_xy_height(before, after)) {
+    ++blocked_advances_;
+    if (blocked_advances_ >= 4) {
+      finished_ = true;
+      return;
+    }
+    move_.rotate(TurnDirection::Right, 90.0 * su::deg);
+  } else {
+    blocked_advances_ = 0;
+  }
 }
 
 }  // namespace dmap
