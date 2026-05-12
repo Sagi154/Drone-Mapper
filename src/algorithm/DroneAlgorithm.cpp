@@ -17,7 +17,7 @@ namespace dmap {
 
 namespace {
 
-using su = mp_units::si::unit_symbols;
+namespace su = mp_units::si::unit_symbols;
 
 bool nearlySameCm(LengthCm a, LengthCm b) {
   return std::abs(a.numerical_value_in(su::cm) - b.numerical_value_in(su::cm)) < 1e-6;

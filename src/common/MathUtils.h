@@ -34,7 +34,7 @@ inline double decimalPlacesToStep(std::int32_t places) {
 /// @param hit Beam direction in degrees and range in cm; distance 0 returns `origin` (too-close hits).
 /// @return Hit position in cm.
 inline Point3D hitToWorldPoint(const DronePosition& origin, const LidarHit& hit) {
-  using su = mp_units::si::unit_symbols;
+  namespace su = mp_units::si::unit_symbols;
   const double az = toRad(hit.azimuth_xy.numerical_value_in(su::deg));
   const double el = toRad(hit.elevation.numerical_value_in(su::deg));
   const double d  = hit.distance.numerical_value_in(su::cm);
