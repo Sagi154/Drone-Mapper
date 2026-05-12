@@ -45,12 +45,8 @@ DroneConfig parseDroneConfig(const std::filesystem::path& path, ErrorLogger& log
 
     const auto& [key, value] = *kv;
     try {
-      if (key == "min_passable_width") {
-        cfg.min_passable_width = std::stod(value) * su::cm;
-      } else if (key == "min_passable_length") {
-        cfg.min_passable_length = std::stod(value) * su::cm;
-      } else if (key == "min_passable_height") {
-        cfg.min_passable_height = std::stod(value) * su::cm;
+      if (key == "min_passable_radius") {
+        cfg.min_passable_radius = std::stod(value) * su::cm;
       } else if (key == "max_rotate") {
         cfg.max_rotate_per_command = std::stod(value) * su::deg;
       } else if (key == "max_advance") {

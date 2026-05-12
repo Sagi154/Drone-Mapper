@@ -29,9 +29,7 @@ static Point3D pt(double x, double y, double h) {
 
 static DroneConfig makeMoveDroneCfg() {
   DroneConfig cfg;
-  cfg.min_passable_width   = 10.0 * su::cm;
-  cfg.min_passable_length  = 10.0 * su::cm;
-  cfg.min_passable_height  = 10.0 * su::cm;
+  cfg.min_passable_radius  = 5.0 * su::cm;
   cfg.max_rotate_per_command  = 180.0 * su::deg;
   cfg.max_advance_per_command = 200.0 * su::cm;
   cfg.max_elevate_per_command = 200.0 * su::cm;

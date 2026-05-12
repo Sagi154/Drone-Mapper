@@ -2,11 +2,16 @@
 // Checks whether a position or the drone's physical body overlaps with an
 // Occupied cell in the ground-truth map.
 //
+// The drone is modelled as a perfect sphere of radius min_passable_radius.
+// Because a sphere has no preferred orientation, its collision footprint is
+// identical regardless of heading — rotation never changes which cells are
+// tested.
+//
 // Two usage modes:
 //   1. Point-only (lightweight constructor): just asks "is this exact cell
 //      occupied?" — used by LidarMock when ray-marching beams.
-//   2. Full footprint (full constructor): samples the drone's 3-D bounding
-//      box at every grid cell and returns true if any cell is Occupied —
+//   2. Full footprint (full constructor): samples the drone's spherical
+//      volume at every grid cell and returns true if any cell is Occupied —
 //      used by MovementMock to prevent the drone from entering narrow gaps
 //      or tunnelling through thin walls.
 
@@ -47,20 +52,21 @@ class CollisionDetector {
   //   tests/test_collision_detector.cpp
   bool intersectsOccupied(const Point3D& at) const;
 
-  // Returns true if ANY cell inside the drone's full 3-D oriented bounding box
-  // at position `pos` is Occupied.
+  // Returns true if ANY cell inside the drone's spherical volume at position
+  // `pos` is Occupied.
   // Used for static placement checks (e.g. verifying the initial drone position).
   bool intersectsFootprint(const DronePosition& pos) const;
 
-  // Returns true if any cell on the drone's front face (at +half_length along
-  // the heading) is Occupied.
-  // Used by MovementMock::advance — only the face entering new space needs
-  // checking because the rest of the box was already clear one step ago.
+  // Returns true if any cell in the drone's forward hemisphere (the half of
+  // the sphere whose centre-to-sample vector has a non-negative dot product
+  // with the current heading) is Occupied.
+  // Used by MovementMock::advance — only the leading hemisphere needs
+  // checking because the trailing half was already clear one step ago.
   bool intersectsForwardFace(const DronePosition& pos) const;
 
-  // Returns true if any cell on the drone's top face (upward=true) or
-  // bottom face (upward=false) is Occupied.
-  // Used by MovementMock::elevate — only the leading face is checked for
+  // Returns true if any cell in the drone's top hemisphere (upward=true) or
+  // bottom hemisphere (upward=false) is Occupied.
+  // Used by MovementMock::elevate — only the leading hemisphere is checked for
   // the same reason as intersectsForwardFace.
   bool intersectsElevateFace(const DronePosition& pos, bool upward) const;
 

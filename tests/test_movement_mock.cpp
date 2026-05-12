@@ -17,12 +17,10 @@ using namespace dmap;
 // Helpers
 // -----------------------------------------------------------------------
 
-// DroneConfig with generous limits and a 20x20x20 cm body.
+// DroneConfig with generous limits and a sphere of radius 10 cm (diameter 20 cm).
 static DroneConfig makeDroneCfg() {
   DroneConfig cfg;
-  cfg.min_passable_width   = 20.0 * su::cm;
-  cfg.min_passable_length  = 20.0 * su::cm;
-  cfg.min_passable_height  = 20.0 * su::cm;
+  cfg.min_passable_radius  = 10.0 * su::cm;
   cfg.max_rotate_per_command  = 90.0 * su::deg;
   cfg.max_advance_per_command = 100.0 * su::cm;
   cfg.max_elevate_per_command = 100.0 * su::cm;
