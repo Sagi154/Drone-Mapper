@@ -11,6 +11,10 @@ endfunction()
 add_drone_mapper_test_suite(drone_mapper_config_tests config
         test_config_parser.cpp
 )
+# test_config_parser.cpp uses committed sample inputs under test_data/.
+target_compile_definitions(
+        drone_mapper_config_tests PRIVATE
+        "TEST_DATA_DIR=\"${CMAKE_SOURCE_DIR}/test_data\"")
 
 add_drone_mapper_test_suite(drone_mapper_mapping_tests mapping
         test_building_map.cpp
@@ -33,13 +37,3 @@ add_drone_mapper_test_suite(drone_mapper_simulation_tests simulation
 add_drone_mapper_test_suite(drone_mapper_integration_tests integration
         test_integration.cpp
 )
-target_include_directories(drone_mapper_tests PRIVATE "${CMAKE_SOURCE_DIR}/src")
-target_link_libraries(drone_mapper_tests PRIVATE drone_mapper_lib GTest::gtest
-                                                  GTest::gtest_main)
-
-# Path to committed sample inputs used by end-to-end parser tests.
-target_compile_definitions(
-  drone_mapper_tests PRIVATE "TEST_DATA_DIR=\"${CMAKE_SOURCE_DIR}/test_data\"")
-
-include(GoogleTest)
-gtest_discover_tests(drone_mapper_tests)
