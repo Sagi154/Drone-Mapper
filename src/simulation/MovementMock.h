@@ -27,11 +27,12 @@ class MovementMock final : public IMovementDriver {
                const MissionConfig& mission_cfg);
 
   // Turns the drone left or right by `angle` degrees.
-  // Rejected (no-op) if angle is negative or exceeds max_rotate_per_command.
+  // Negative angles are allowed (spec-permitted).
+  // Rejected (no-op) if |angle| exceeds max_rotate_per_command.
   void rotate(TurnDirection direction, AngleDeg angle) override;
 
-  // Moves the drone forward along its current heading by `distance` cm.
-  // Rejected if: distance is negative, exceeds max_advance_per_command,
+  // Moves the drone forward (positive) or backward (negative) by `distance` cm.
+  // Rejected if: |distance| exceeds max_advance_per_command,
   // or any cell along the path (checked step-by-step) is Occupied.
   void advance(LengthCm distance) override;
 
