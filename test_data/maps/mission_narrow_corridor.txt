@@ -1,0 +1,20 @@
+# Mission config for map_narrow_corridor.txt
+# 600 x 200 x 200 cm space.
+# Two walls at y=80 and y=121 create a 40 cm-wide corridor (y=81..120).
+# min_passable_width = 30 cm, so drone can just fit.
+
+min_x = 0
+max_x = 600
+min_y = 0
+max_y = 200
+min_height = 0
+max_height = 200
+
+# Start at west end of the corridor, centred in the gap
+start_x = 20
+start_y = 100
+start_height = 50
+start_angle = 0   # facing east (into corridor)
+
+xy_decimal_places = 0
+height_decimal_places = 0

@@ -73,6 +73,15 @@ Simple split so you can work in parallel without stepping on the same files all 
 **A**
 
 - Weird maps: tight corridors, height changes, lidar limits.
+- **Done** — 7 edge-case maps generated in `test_data/maps/` (see `docs/test_maps.md`):
+  1. `map_open_room` — empty baseline
+  2. `map_narrow_corridor` — 40 cm tunnel (passable)
+  3. `map_impassable_gap` — 20 cm gap (impassable, < 30 cm min)
+  4. `map_enclosed_room` — sealed box, interior permanently inaccessible
+  5. `map_pillars` — 10 column obstacles with lidar shadow zones
+  6. `map_dead_end` — U-shaped hall with one dead-end arm
+  7. `map_low_obstacles` — walls only z=0..40; drone can fly over at z=60
+- Generator script: `scripts/generate_test_maps.py` (re-run to regenerate)
 
 **Together**
 

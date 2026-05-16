@@ -1,0 +1,21 @@
+# Mission config for map_dead_end.txt
+# 500 x 500 x 200 cm space with a U-shaped hallway.
+# Left arm (x=51..199, y=201..399): dead end, no exit.
+# Right arm (x=301..449, y=201..399): connects around the top.
+# Tests that the drone can enter a dead end, backtrack, and find the exit.
+
+min_x = 0
+max_x = 500
+min_y = 0
+max_y = 500
+min_height = 0
+max_height = 200
+
+# Start south of the U, between the two outer walls — can enter either arm
+start_x = 125
+start_y = 100
+start_height = 50
+start_angle = 90   # facing north (into the U)
+
+xy_decimal_places = 0
+height_decimal_places = 0

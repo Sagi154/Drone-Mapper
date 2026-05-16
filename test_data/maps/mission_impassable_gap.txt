@@ -1,0 +1,20 @@
+# Mission config for map_impassable_gap.txt
+# 500 x 500 x 200 cm space.
+# Wall at y=100 with a 20 cm gap at x=240..259 (narrower than 30 cm min).
+# Drone starts south of the wall; northern half is permanently inaccessible.
+
+min_x = 0
+max_x = 500
+min_y = 0
+max_y = 500
+min_height = 0
+max_height = 200
+
+# Start on the south side (y < 100)
+start_x = 100
+start_y = 50
+start_height = 50
+start_angle = 90   # facing north (toward the wall)
+
+xy_decimal_places = 0
+height_decimal_places = 0

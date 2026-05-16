@@ -1,0 +1,20 @@
+# Mission config for map_pillars.txt
+# 500 x 500 x 200 cm space with 10 square pillars.
+# Gaps between pillars are all >= 50 cm (well above 30 cm min).
+# Tests navigation around isolated obstacles and lidar shadow zones.
+
+min_x = 0
+max_x = 500
+min_y = 0
+max_y = 500
+min_height = 0
+max_height = 200
+
+# Start in the clear SW corner
+start_x = 50
+start_y = 25
+start_height = 50
+start_angle = 0
+
+xy_decimal_places = 0
+height_decimal_places = 0
