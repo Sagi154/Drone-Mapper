@@ -31,9 +31,7 @@ TEST(ConfigParser, DroneConfigParsesKnownKeys) {
   const auto path = writeTempFile(
       "dmap_drone_config_test.txt",
       "# drone config\n"
-      "min_passable_width = 30\n"
-      "min_passable_length=31\n"
-      "min_passable_height = 22\n"
+      "min_passable_radius = 15\n"
       "max_rotate = 91\n"
       "max_advance = 105\n"
       "max_elevate = 55\n"
@@ -44,9 +42,7 @@ TEST(ConfigParser, DroneConfigParsesKnownKeys) {
 
   dmap::ErrorLogger logger;
   const auto cfg = dmap::parseDroneConfig(path, logger);
-  EXPECT_NEAR(cfg.min_passable_width.numerical_value_in(su::cm), 30.0, 1e-9);
-  EXPECT_NEAR(cfg.min_passable_length.numerical_value_in(su::cm), 31.0, 1e-9);
-  EXPECT_NEAR(cfg.min_passable_height.numerical_value_in(su::cm), 22.0, 1e-9);
+  EXPECT_NEAR(cfg.min_passable_radius.numerical_value_in(su::cm), 15.0, 1e-9);
   EXPECT_NEAR(cfg.max_rotate_per_command.numerical_value_in(su::deg), 91.0, 1e-9);
   EXPECT_NEAR(cfg.max_advance_per_command.numerical_value_in(su::cm), 105.0, 1e-9);
   EXPECT_NEAR(cfg.max_elevate_per_command.numerical_value_in(su::cm), 55.0, 1e-9);
@@ -62,7 +58,7 @@ TEST(ConfigParser, DroneConfigParsesKnownKeys) {
 TEST(ConfigParser, DroneConfigMissingFileReturnsDefaults) {
   dmap::ErrorLogger logger;
   const auto cfg = dmap::parseDroneConfig("nope.txt", logger);
-  EXPECT_NEAR(cfg.min_passable_width.numerical_value_in(su::cm), 0.0, 1e-9);
+  EXPECT_NEAR(cfg.min_passable_radius.numerical_value_in(su::cm), 0.0, 1e-9);
   EXPECT_EQ(cfg.lidar.fov_circles, 1);
 }
 
@@ -172,7 +168,7 @@ TEST(ConfigParser, MapInputMissingFileReturnsFalse) {
 TEST(ConfigParser, ErrorLoggerDroneConfigCleanRunLogsNothing) {
   const auto path = writeTempFile(
       "dmap_drone_config_clean_errorlog_test.txt",
-      "min_passable_width = 30\n"
+      "min_passable_radius = 15\n"
       "lidar_fov_circles = 5\n");
 
   dmap::ErrorLogger logger;
