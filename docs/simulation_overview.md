@@ -96,18 +96,21 @@ CollisionDetector(const SimulationState& state,
 `step_xy_cm` and `step_height_cm` come from `MissionConfig` resolution:  
 `step = 10^(-decimal_places)` cm — exactly one grid cell.
 
-**Key design decision — partial-face checks during movement:**  
-Instead of re-sampling the drone's entire bounding box on every step, only the **leading face** is checked as the drone moves:
-- `advance` → forward face (width × height slice at `dl = +half_length`)
-- `elevate` upward → top face (length × width slice at `dh = +half_height`)
-- `elevate` downward → bottom face (`dh = -half_height`)
+**Key design decision — sphere model:**  
+The drone is treated as a **perfect sphere** of radius `min_passable_radius`.  A bounding cube of side `2r` is subdivided into a grid of sample points; only points whose Euclidean distance from the sphere centre is ≤ `r` are tested.  Because a sphere has no preferred orientation its footprint is **identical for every heading** — rotation never changes the set of occupied cells checked.
 
-The interior was already confirmed clear at the previous step. Full-box checks are only used for static placement validation.
+**Key design decision — partial-hemisphere checks during movement:**  
+Instead of re-sampling the drone's entire sphere on every step, only the **leading hemisphere** is checked as the drone moves:
+- `advance` → forward hemisphere (samples where `dot((dx,dy), heading) ≥ 0`)
+- `elevate` upward → top hemisphere (`dz ≥ 0`)
+- `elevate` downward → bottom hemisphere (`dz ≤ 0`)
+
+The trailing half was already confirmed clear at the previous step. Full-sphere checks are only used for static placement validation.
 
 **No floating-point loop accumulation:**  
-All face grids are indexed by integers. Each sample offset is computed as:
+All sample grids are indexed by integers. Each offset is computed as:
 ```
-offset(i) = -half + i * step
+offset(i) = -r + i * step
 ```
 This avoids the classic `d += step` drift where the final boundary cell might be missed.
 
@@ -116,17 +119,17 @@ This avoids the classic `d += step` drift where the final boundary cell might be
 | Method | What it does |
 |---|---|
 | `intersectsOccupied(point)` | Single grid-cell check — is this exact cell occupied? Used by lidar ray-march. |
-| `intersectsFootprint(pos)` | Full 3-D oriented bounding box check — all cells in width × length × height volume. |
-| `intersectsForwardFace(pos)` | Front face only — width × height slice entering new space during `advance`. |
-| `intersectsElevateFace(pos, upward)` | Top or bottom face — length × width slice entering new space during `elevate`. |
+| `intersectsFootprint(pos)` | Full sphere check — all cells within radius of the drone centre. Heading-independent. |
+| `intersectsForwardFace(pos)` | Forward hemisphere only — cells entering new space during `advance`. |
+| `intersectsElevateFace(pos, upward)` | Top or bottom hemisphere — cells entering new space during `elevate`. |
 
-**Oriented bounding box geometry** (shared by all footprint methods via `makeGeom`):
+**Sphere sampling geometry** (shared by all footprint methods via `makeGeom`):
 ```
-world_x = cx + dl × fwd_x + dw × rgt_x
-world_y = cy + dl × fwd_y + dw × rgt_y
-world_z = ch + dh
+For each (dx, dy, dz) in the bounding cube [-r, r]³:
+  if dx² + dy² + dz² > r²: skip
+  sample = (cx + dx, cy + dy, ch + dz)
 ```
-where `fwd = (cos θ, sin θ)` and `rgt = (sin θ, -cos θ)`, and `dl/dw/dh` range over the half-dimensions from `DroneConfig`.
+`fwd = (cos θ, sin θ)` is still stored in `SphereGeom` for the hemisphere direction test in `intersectsForwardFace`.
 
 ---
 

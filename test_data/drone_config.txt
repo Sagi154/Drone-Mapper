@@ -1,7 +1,7 @@
 # Drone capabilities
-min_passable_width = 30
-min_passable_length = 30
-min_passable_height = 20
+# Drone is modelled as a sphere; radius replaces the old width/length/height.
+# 15 cm radius (30 cm diameter) matches the previous horizontal footprint.
+min_passable_radius = 15
 max_rotate = 90
 max_advance = 100
 max_elevate = 50
