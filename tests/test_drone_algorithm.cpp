@@ -46,9 +46,7 @@ dmap::DroneConfig makeDroneForScanMapTest() {
   cfg.lidar.z_min            = 5.0   * su::cm;
   cfg.lidar.z_max            = 120.0 * su::cm;
   cfg.lidar.circle_spacing_d = 2.5   * su::cm;
-  cfg.min_passable_width     = 10.0  * su::cm;
-  cfg.min_passable_length    = 10.0  * su::cm;
-  cfg.min_passable_height    = 10.0  * su::cm;
+  cfg.min_passable_radius    = 5.0   * su::cm;
   cfg.max_rotate_per_command  = 180.0 * su::deg;
   cfg.max_advance_per_command = 200.0 * su::cm;
   cfg.max_elevate_per_command = 200.0 * su::cm;
@@ -68,7 +66,7 @@ TEST(DroneAlgorithm, TickDoesNotThrow) {
   dmap::LidarMock lidar(state, drone_cfg);
   dmap::PositionMock pos(state);
   dmap::MovementMock move(state, drone_cfg, mission);
-  dmap::DroneAlgorithm algo(lidar, pos, move, map, 0.0 * su::cm);
+  dmap::DroneAlgorithm algo(lidar, pos, move, map, 0.0 * su::cm, drone_cfg.lidar.z_max);
 
   int ticks = 0;
   constexpr int kCap = 10;
@@ -106,7 +104,7 @@ TEST(DroneAlgorithm, Tick_ScanUpdatesMap_OccupiedCellMarked) {
   dmap::LidarMock lidar(state, drone_cfg);
   dmap::PositionMock pos(state);
   dmap::MovementMock move(state, drone_cfg, mission);
-  dmap::DroneAlgorithm algo(lidar, pos, move, map, 10.0 * su::cm);
+  dmap::DroneAlgorithm algo(lidar, pos, move, map, 10.0 * su::cm, drone_cfg.lidar.z_max);
 
   algo.tick();
 

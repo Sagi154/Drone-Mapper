@@ -20,6 +20,8 @@ COPY vcpkg.json CMakeLists.txt CMakePresets.json ./
 COPY include ./include
 COPY src ./src
 COPY tests ./tests
+# Committed samples for config tests (TEST_DATA_DIR) and parity with main startup paths.
+COPY test_data ./test_data
 
 ARG CMAKE_BUILD_PARALLEL_LEVEL=4
 ENV CMAKE_BUILD_PARALLEL_LEVEL=${CMAKE_BUILD_PARALLEL_LEVEL}

@@ -31,9 +31,7 @@ TEST(ConfigParser, DroneConfigParsesKnownKeys) {
   const auto path = writeTempFile(
       "dmap_drone_config_test.txt",
       "# drone config\n"
-      "min_passable_width = 30\n"
-      "min_passable_length=31\n"
-      "min_passable_height = 22\n"
+      "min_passable_radius = 15\n"
       "max_rotate = 91\n"
       "max_advance = 105\n"
       "max_elevate = 55\n"
@@ -44,9 +42,7 @@ TEST(ConfigParser, DroneConfigParsesKnownKeys) {
 
   dmap::ErrorLogger logger;
   const auto cfg = dmap::parseDroneConfig(path, logger);
-  EXPECT_NEAR(cfg.min_passable_width.numerical_value_in(su::cm), 30.0, 1e-9);
-  EXPECT_NEAR(cfg.min_passable_length.numerical_value_in(su::cm), 31.0, 1e-9);
-  EXPECT_NEAR(cfg.min_passable_height.numerical_value_in(su::cm), 22.0, 1e-9);
+  EXPECT_NEAR(cfg.min_passable_radius.numerical_value_in(su::cm), 15.0, 1e-9);
   EXPECT_NEAR(cfg.max_rotate_per_command.numerical_value_in(su::deg), 91.0, 1e-9);
   EXPECT_NEAR(cfg.max_advance_per_command.numerical_value_in(su::cm), 105.0, 1e-9);
   EXPECT_NEAR(cfg.max_elevate_per_command.numerical_value_in(su::cm), 55.0, 1e-9);
@@ -62,7 +58,7 @@ TEST(ConfigParser, DroneConfigParsesKnownKeys) {
 TEST(ConfigParser, DroneConfigMissingFileReturnsDefaults) {
   dmap::ErrorLogger logger;
   const auto cfg = dmap::parseDroneConfig("nope.txt", logger);
-  EXPECT_NEAR(cfg.min_passable_width.numerical_value_in(su::cm), 0.0, 1e-9);
+  EXPECT_NEAR(cfg.min_passable_radius.numerical_value_in(su::cm), 0.0, 1e-9);
   EXPECT_EQ(cfg.lidar.fov_circles, 1);
 }
 
@@ -172,7 +168,7 @@ TEST(ConfigParser, MapInputMissingFileReturnsFalse) {
 TEST(ConfigParser, ErrorLoggerDroneConfigCleanRunLogsNothing) {
   const auto path = writeTempFile(
       "dmap_drone_config_clean_errorlog_test.txt",
-      "min_passable_width = 30\n"
+      "min_passable_radius = 15\n"
       "lidar_fov_circles = 5\n");
 
   dmap::ErrorLogger logger;
@@ -256,4 +252,34 @@ TEST(ConfigParser, ErrorLoggerMapInputBadRecordLogged) {
   ASSERT_TRUE(dmap::loadGroundTruthMap(path, state, logger));
   ASSERT_EQ(logger.size(), 1U);
   EXPECT_NE(logger.lines().front().find("bad \"occupied\" record"), std::string::npos);
+}
+
+#ifndef TEST_DATA_DIR
+#error TEST_DATA_DIR must be defined by CMake (tests/CMakeLists.txt) for sample-file tests.
+#endif
+
+// Scenario: committed test_data sample files load end-to-end like main startup.
+// Expected: loadGroundTruthMap succeeds; ErrorLogger stays empty; a few fields match samples.
+// Why: milestone gate — sane real files parse without recoverable logged errors.
+TEST(ConfigParser, StartupLoadsRepositoryTestData) {
+  const std::filesystem::path root(TEST_DATA_DIR);
+
+  dmap::ErrorLogger logger;
+  const auto drone = dmap::parseDroneConfig(root / "drone_config.txt", logger);
+  const auto mission = dmap::parseMissionConfig(root / "mission_config.txt", logger);
+
+  dmap::SimulationState state;
+  ASSERT_TRUE(dmap::loadGroundTruthMap(root / "map_input.txt", state, logger));
+  EXPECT_TRUE(logger.empty());
+
+  EXPECT_NEAR(drone.max_rotate_per_command.numerical_value_in(su::deg), 90.0, 1e-9);
+  EXPECT_EQ(drone.lidar.fov_circles, 5);
+
+  EXPECT_NEAR(mission.max_x.numerical_value_in(su::cm), 500.0, 1e-9);
+  EXPECT_NEAR(mission.initial_position.x.numerical_value_in(su::cm), 100.0, 1e-9);
+
+  ASSERT_TRUE(state.hasBounds());
+  EXPECT_NEAR(state.mapBounds().max_x.numerical_value_in(su::cm), 500.0, 1e-9);
+  EXPECT_EQ(state.truthValue(dmap::Point3D{100.0 * su::cm, 200.0 * su::cm, 0.0 * su::cm}),
+            dmap::MapValue::Occupied);
 }

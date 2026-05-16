@@ -23,10 +23,12 @@ int main(int argc, char** argv) {
   dmap::log::info("drone_mapper scaffold starting");
 
   dmap::ErrorLogger logger;
+  // Config parse errors are recoverable (parsers keep defaults and log details).
   const auto drone_cfg = dmap::parseDroneConfig(root / "drone_config.txt", logger);
   const auto mission = dmap::parseMissionConfig(root / "mission_config.txt", logger);
 
   dmap::SimulationState state;
+  // Map file open failure is unrecoverable for startup and must abort.
   const bool map_loaded = dmap::loadGroundTruthMap(root / "map_input.txt", state, logger);
   if (!map_loaded) {
     std::cerr << "unrecoverable error: failed to load map_input.txt\n";
@@ -38,7 +40,8 @@ int main(int argc, char** argv) {
   dmap::LidarMock lidar(state, drone_cfg);
   dmap::PositionMock pos(state);
   dmap::MovementMock move(state, drone_cfg, mission);
-  dmap::DroneAlgorithm algo(lidar, pos, move, map, drone_cfg.max_advance_per_command);
+  dmap::DroneAlgorithm algo(lidar, pos, move, map, drone_cfg.max_advance_per_command,
+                            drone_cfg.lidar.z_max);
   int ticks = 0;
   constexpr int kMaxTicks = 1'000'000;
   while (!algo.isFinished() && ticks < kMaxTicks) {

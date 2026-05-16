@@ -6,11 +6,13 @@
 //      querying the ground-truth map at each sample point.
 //   4. Records the first Occupied hit and stops (first-hit-only model).
 //      Hits closer than Z_min report distance=0 (too close to measure accurately).
+//      Beams with no hit within Z_max still appear in the result with distance=-1.
 
 #include "simulation/LidarMock.h"
 
 #include "common/MathUtils.h"
 #include "common/Point3D.h"
+#include "sensors/LidarTypes.h"
 #include "simulation/CollisionDetector.h"
 
 #include <mp-units/systems/si/unit_symbols.h>
@@ -71,6 +73,7 @@ LidarScanResult LidarMock::scan(std::optional<AngleDeg> xy_offset,
         std::atan2(wz, std::sqrt(wx * wx + wy * wy)) * (180.0 / std::numbers::pi);
 
     // 3. March along the ray, first-hit-only, up to Z_max.
+    bool hit = false;
     for (double t = step; t <= z_max_cm; t += step) {
       const Point3D sample{(ox + t * wx) * su::cm,
                            (oy + t * wy) * su::cm,
@@ -82,8 +85,14 @@ LidarScanResult LidarMock::scan(std::optional<AngleDeg> xy_offset,
         result.push_back({azimuth_deg * su::deg,
                           elevation_deg * su::deg,
                           reported_dist});
+        hit = true;
         break;  // first hit only — beam stops at the wall
       }
+    }
+    if (!hit) {
+      result.push_back({azimuth_deg * su::deg,
+                        elevation_deg * su::deg,
+                        lidarNoReturnDistance()});
     }
   }
 

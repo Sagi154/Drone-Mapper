@@ -32,6 +32,7 @@ inline double decimalPlacesToStep(std::int32_t places) {
 /// convention as LidarMock (azimuth_xy = atan2(wy,wx), elevation = atan2(wz, hypot(wx,wy))).
 /// @param origin Drone centre in cm (scan origin).
 /// @param hit Beam direction in degrees and range in cm; distance 0 returns `origin` (too-close hits).
+///            Do not call with the no-return sentinel (-1).
 /// @return Hit position in cm.
 inline Point3D hitToWorldPoint(const DronePosition& origin, const LidarHit& hit) {
   namespace su = mp_units::si::unit_symbols;

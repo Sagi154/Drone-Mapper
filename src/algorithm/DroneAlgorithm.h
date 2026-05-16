@@ -11,7 +11,7 @@ namespace dmap {
 class DroneAlgorithm {
  public:
   DroneAlgorithm(ILidarSensor& lidar, IPositionSensor& pos, IMovementDriver& move,
-                 IBuildingMap& map, LengthCm advance_step);
+                 IBuildingMap& map, LengthCm advance_step, LengthCm lidar_z_max);
 
   /// One step: lidar scan into map, then try advance; on block rotate right until four blocks end the run.
   void tick();
@@ -25,6 +25,7 @@ class DroneAlgorithm {
   IMovementDriver& move_;
   IBuildingMap& map_;
   LengthCm advance_step_{};
+  LengthCm lidar_z_max_{};
 
   int blocked_advances_{0};
   bool finished_{false};
