@@ -1,9 +1,7 @@
 // LidarMock.h
 // Simulated lidar sensor.  For each scan it fires all beams defined by
 // LidarBeamCalculator into the ground-truth map using ray-marching and
-// returns the distance to the first Occupied cell along each beam.
-// Beams that reach Z_max without hitting anything produce no hit record,
-// faithfully modelling the sensor's limited range.
+// returns one LidarHit per beam (distance=-1 when nothing is hit within Z_max).
 
 #pragma once
 
@@ -23,7 +21,7 @@ class LidarMock final : public ILidarSensor {
   LidarMock(SimulationState& state, DroneConfig drone_cfg);
 
   // Fires all configured beams from the drone's current position.
-  // Returns one LidarHit per beam that strikes an Occupied cell within Z_max.
+  // Returns one LidarHit per beam; distance=-1 when nothing is hit within Z_max.
   //
   // xy_offset:    optional extra heading rotation applied to the entire cone
   //               (useful when the lidar is mounted at an angle).
