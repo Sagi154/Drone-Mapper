@@ -14,9 +14,11 @@ struct LidarConfig {
 };
 
 struct DroneConfig {
-  LengthCm min_passable_width{};
-  LengthCm min_passable_length{};
-  LengthCm min_passable_height{};
+  /// Radius of the sphere used for collision detection (cm).
+  /// The drone is modelled as a perfect ball of this radius so that
+  /// its collision footprint is independent of heading — no oriented-box
+  /// geometry is needed and rotation never changes the occupied cells.
+  LengthCm min_passable_radius{};
   AngleDeg max_rotate_per_command{};
   LengthCm max_advance_per_command{};
   LengthCm max_elevate_per_command{};
