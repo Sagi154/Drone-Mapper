@@ -66,7 +66,7 @@ TEST(DroneAlgorithm, TickDoesNotThrow) {
   dmap::LidarMock lidar(state, drone_cfg);
   dmap::PositionMock pos(state);
   dmap::MovementMock move(state, drone_cfg, mission);
-  dmap::DroneAlgorithm algo(lidar, pos, move, map, 0.0 * su::cm);
+  dmap::DroneAlgorithm algo(lidar, pos, move, map, 0.0 * su::cm, drone_cfg.lidar.z_max);
 
   int ticks = 0;
   constexpr int kCap = 10;
@@ -104,7 +104,7 @@ TEST(DroneAlgorithm, Tick_ScanUpdatesMap_OccupiedCellMarked) {
   dmap::LidarMock lidar(state, drone_cfg);
   dmap::PositionMock pos(state);
   dmap::MovementMock move(state, drone_cfg, mission);
-  dmap::DroneAlgorithm algo(lidar, pos, move, map, 10.0 * su::cm);
+  dmap::DroneAlgorithm algo(lidar, pos, move, map, 10.0 * su::cm, drone_cfg.lidar.z_max);
 
   algo.tick();
 

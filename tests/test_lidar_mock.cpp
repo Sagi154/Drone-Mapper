@@ -3,6 +3,7 @@
 
 #include "config/DroneConfig.h"
 #include "mapping/MapTypes.h"
+#include "sensors/LidarTypes.h"
 
 #include <mp-units/systems/si/unit_symbols.h>
 #include <gtest/gtest.h>
@@ -48,11 +49,13 @@ static void placeAt(SimulationState& state, double x, double y, double h, double
 // Basic
 // -----------------------------------------------------------------------
 
-TEST(LidarMock, ScanReturnsEmptyByDefault) {
+TEST(LidarMock, ScanReturnsOneMissByDefault) {
   SimulationState state;
   DroneConfig cfg{};
   LidarMock lidar(state, cfg);
-  EXPECT_TRUE(lidar.scan().empty());
+  const auto result = lidar.scan();
+  ASSERT_EQ(result.size(), 1u);
+  EXPECT_TRUE(lidarHitIsMiss(result[0]));
 }
 
 // -----------------------------------------------------------------------
@@ -79,6 +82,7 @@ TEST(LidarMock, CenterBeam_WallAhead_CorrectDistance) {
   LidarMock lidar(state, makeSingleBeamCfg());
   const auto result = lidar.scan();
   ASSERT_EQ(result.size(), 1u);
+  ASSERT_FALSE(lidarHitIsMiss(result[0]));
   const double dist_cm = result[0].distance.numerical_value_in(su::cm);
   EXPECT_NEAR(dist_cm, 50.0, 2.0);  // within 2cm of the wall
 }
@@ -90,7 +94,9 @@ TEST(LidarMock, CenterBeam_WallBeyondZMax_NoHit) {
   state.setTruthCell(pt(150, 0, 0), MapValue::Occupied);
 
   LidarMock lidar(state, makeSingleBeamCfg());
-  EXPECT_TRUE(lidar.scan().empty());
+  const auto result = lidar.scan();
+  ASSERT_EQ(result.size(), 1u);
+  EXPECT_TRUE(lidarHitIsMiss(result[0]));
 }
 
 TEST(LidarMock, CenterBeam_WallBehind_NoHit) {
@@ -99,7 +105,9 @@ TEST(LidarMock, CenterBeam_WallBehind_NoHit) {
   state.setTruthCell(pt(-50, 0, 0), MapValue::Occupied);  // wall behind
 
   LidarMock lidar(state, makeSingleBeamCfg());
-  EXPECT_TRUE(lidar.scan().empty());
+  const auto result = lidar.scan();
+  ASSERT_EQ(result.size(), 1u);
+  EXPECT_TRUE(lidarHitIsMiss(result[0]));
 }
 
 // -----------------------------------------------------------------------
@@ -113,10 +121,13 @@ TEST(LidarMock, XYOffset_RotatesScan_HitAfterRotation) {
   state.setTruthCell(pt(0, 50, 0), MapValue::Occupied);
 
   LidarMock lidar(state, makeSingleBeamCfg());
-  // No hit without offset.
-  EXPECT_TRUE(lidar.scan().empty());
+  const auto no_offset = lidar.scan();
+  ASSERT_EQ(no_offset.size(), 1u);
+  EXPECT_TRUE(lidarHitIsMiss(no_offset[0]));
   // With +90° offset the beam points north → should hit.
-  ASSERT_FALSE(lidar.scan(90.0 * su::deg).empty());
+  const auto rotated = lidar.scan(90.0 * su::deg);
+  ASSERT_EQ(rotated.size(), 1u);
+  EXPECT_FALSE(lidarHitIsMiss(rotated[0]));
 }
 
 // -----------------------------------------------------------------------
@@ -181,11 +192,18 @@ TEST(LidarMock, TwoCircles_WallAhead_MultipleBeamsHit) {
 
   LidarMock lidar(state, makeTwoCircleCfg());
   const auto result = lidar.scan();
+  ASSERT_EQ(result.size(), 5u);
   // The lidar intentionally has blind spots between adjacent beams.
   // Features that fall entirely in a gap and are smaller than the mission
   // resolution are not required to be detected (per spec).
   // At least 4 of the 5 beams must hit the wall; the outer circle must
-  // contribute (result > 1 beam).
-  EXPECT_GE(result.size(), 4u);
-  EXPECT_GT(result.size(), 1u);
+  // contribute (more than one real hit).
+  int hit_count = 0;
+  for (const auto& h : result) {
+    if (!lidarHitIsMiss(h)) {
+      ++hit_count;
+    }
+  }
+  EXPECT_GE(hit_count, 4);
+  EXPECT_GT(hit_count, 1);
 }

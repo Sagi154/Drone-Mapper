@@ -27,13 +27,24 @@ bool same_xy_height(const DronePosition& a, const DronePosition& b) {
   return nearlySameCm(a.x, b.x) && nearlySameCm(a.y, b.y) && nearlySameCm(a.height, b.height);
 }
 
-void applyLidarHitsToMap(IBuildingMap& map, const DronePosition& here, const LidarScanResult& hits) {
+void applyLidarHitsToMap(IBuildingMap& map, const DronePosition& here,
+                         const LidarScanResult& hits, LengthCm lidar_z_max) {
   const MapBounds b = map.bounds();
   const double xy_step  = decimalPlacesToStep(b.xy_decimal_places);
   const double h_step   = decimalPlacesToStep(b.height_decimal_places);
   const double ray_step = std::min(xy_step, h_step);
+  const double z_max_cm = lidar_z_max.numerical_value_in(su::cm);
 
   for (const LidarHit& h : hits) {
+    if (lidarHitIsMiss(h)) {
+      for (double t_cm = ray_step; t_cm <= z_max_cm; t_cm += ray_step) {
+        LidarHit slice = h;
+        slice.distance = t_cm * su::cm;
+        map.set(hitToWorldPoint(here, slice), MapValue::Empty);
+      }
+      continue;
+    }
+
     const double d_cm = h.distance.numerical_value_in(su::cm);
     if (d_cm > 0.0) {
       for (double t_cm = ray_step; t_cm < d_cm; t_cm += ray_step) {
@@ -49,8 +60,13 @@ void applyLidarHitsToMap(IBuildingMap& map, const DronePosition& here, const Lid
 }  // namespace
 
 DroneAlgorithm::DroneAlgorithm(ILidarSensor& lidar, IPositionSensor& pos, IMovementDriver& move,
-                               IBuildingMap& map, LengthCm advance_step)
-    : lidar_(lidar), pos_(pos), move_(move), map_(map), advance_step_(advance_step) {}
+                               IBuildingMap& map, LengthCm advance_step, LengthCm lidar_z_max)
+    : lidar_(lidar),
+      pos_(pos),
+      move_(move),
+      map_(map),
+      advance_step_(advance_step),
+      lidar_z_max_(lidar_z_max) {}
 
 void DroneAlgorithm::tick() {
   if (finished_) {
@@ -58,7 +74,7 @@ void DroneAlgorithm::tick() {
   }
 
   const DronePosition before = pos_.getPosition();
-  applyLidarHitsToMap(map_, before, lidar_.scan());
+  applyLidarHitsToMap(map_, before, lidar_.scan(), lidar_z_max_);
 
   move_.advance(advance_step_);
   const DronePosition after = pos_.getPosition();

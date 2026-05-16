@@ -12,6 +12,7 @@
 #include "config/DroneConfig.h"
 #include "config/MissionConfig.h"
 #include "mapping/MapTypes.h"
+#include "sensors/LidarTypes.h"
 
 #include <mp-units/systems/si/unit_symbols.h>
 #include <gtest/gtest.h>
@@ -125,8 +126,10 @@ TEST(Integration, MoveAndScan_LidarSeesWallAfterMoving) {
   state.setTruthCell(pt(200, 0, 0), MapValue::Occupied);
 
   LidarMock lidar(state, lidar_cfg);
-  // Before moving: wall is 200cm away, beyond z_max=150 → no hit.
-  EXPECT_TRUE(lidar.scan().empty());
+  // Before moving: wall is 200cm away, beyond z_max=150 → no return.
+  const auto before = lidar.scan();
+  ASSERT_EQ(before.size(), 1u);
+  EXPECT_TRUE(lidarHitIsMiss(before[0]));
 
   // Move 100cm east → wall is now 100cm away → within z_max → hit.
   MovementMock move(state, drone_cfg, mission);
@@ -135,6 +138,7 @@ TEST(Integration, MoveAndScan_LidarSeesWallAfterMoving) {
 
   const auto result = lidar.scan();
   ASSERT_EQ(result.size(), 1u);
+  ASSERT_FALSE(lidarHitIsMiss(result[0]));
   const double dist = result[0].distance.numerical_value_in(su::cm);
   EXPECT_NEAR(dist, 100.0, 2.0);
 }
