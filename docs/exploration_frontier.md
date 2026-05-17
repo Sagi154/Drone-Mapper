@@ -13,9 +13,13 @@ within `drone_radius` of that centre is also `Empty` in the drone's map.
 `NotMapped` within the sphere blocks movement — it means no information, not
 "safe to fly through."
 
-**Frontier cell:** A passable cell that has at least one `NotMapped` neighbour
-in the six axis-aligned directions (+X, −X, +Y, −Y, +Height, −Height). Moving
-to a frontier and scanning may reveal those unknown neighbours.
+**Frontier cell:** A passable cell that has at least one axis-aligned neighbour
+(+X, −X, +Y, −Y, +Height, −Height) that is **not** sphere-passable. That
+neighbour may be `NotMapped`, `Occupied`, or `OutOfBounds` — the drone can
+stand at the frontier but cannot safely move its centre onto that neighbour.
+Moving to a frontier and scanning may reveal space beyond the blocked neighbour.
+The start cell is never treated as the goal; BFS only stops on frontiers reached
+after at least one grid step.
 
 ## Algorithm
 

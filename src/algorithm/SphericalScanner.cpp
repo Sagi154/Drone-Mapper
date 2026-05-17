@@ -15,6 +15,7 @@
 #include <algorithm>
 #include <cmath>
 #include <numbers>
+#include <vector>
 #include <mp-units/systems/si/unit_symbols.h>
 
 namespace dmap {
@@ -83,8 +84,20 @@ void SphericalScanner::scan(IBuildingMap& map) const {
   const double denom = (z_min_cm > 0.0) ? z_min_cm : 1.0;
   const double el_step = std::atan(cell_cm / denom) * (180.0 / std::numbers::pi);
 
+  // Include exact horizontal so thin walls at the drone's height are not skipped
+  // between coarse elevation tiers.
+  std::vector<double> elevations;
+  elevations.reserve(static_cast<std::size_t>((180.0 / el_step) + 3.0));
   for (double el = -90.0; el <= 90.0 + 1e-9; el += el_step) {
-    const double el_clamped = std::clamp(el, -90.0, 90.0);
+    elevations.push_back(std::clamp(el, -90.0, 90.0));
+  }
+  if (std::find_if(elevations.begin(), elevations.end(),
+                   [](double el) { return std::abs(el) < 1e-6; }) == elevations.end()) {
+    elevations.push_back(0.0);
+  }
+  std::sort(elevations.begin(), elevations.end());
+
+  for (const double el_clamped : elevations) {
     const double cos_el = std::cos(el_clamped * (std::numbers::pi / 180.0));
     const double az_step = (cos_el > 1e-6) ? (el_step / cos_el) : 360.0;
 

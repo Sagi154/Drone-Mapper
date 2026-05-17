@@ -15,6 +15,7 @@
 #include "common/MathUtils.h"
 #include "mapping/MapTypes.h"
 
+#include <algorithm>
 #include <cmath>
 #include <numbers>
 #include <mp-units/systems/si/unit_symbols.h>
