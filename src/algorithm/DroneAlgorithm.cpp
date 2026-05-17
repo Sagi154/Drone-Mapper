@@ -177,7 +177,9 @@ void DroneAlgorithm::executeNextStep() {
     return;
   }
 
-  move_.advance(cfg_.max_advance_per_command);
+  const double dist_cm = std::sqrt(dx * dx + dy * dy);
+  const double adv_limit = cfg_.max_advance_per_command.numerical_value_in(su::cm);
+  move_.advance(std::min(dist_cm, adv_limit) * su::cm);
 }
 
 }  // namespace dmap

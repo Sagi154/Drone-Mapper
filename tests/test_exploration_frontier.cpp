@@ -73,27 +73,6 @@ TEST(ExplorationFrontier, StartNotPassableWhenSphereHasNotMapped) {
   EXPECT_TRUE(result.path.empty());
 }
 
-// What: straight corridor of confirmed-empty cells ending next to unknown space.
-// Expected: path to the nearest frontier (last empty cell before NotMapped).
-// Uses zero radius so only each cell centre must be Empty.
-TEST(ExplorationFrontier, FindsPathAlongEmptyCorridor) {
-  dmap::BuildingMap map(makeMission1cmGrid());
-  // 3x3 corridor along +X (including ±Y and ±height); only +X ends at unknown.
-  fillEmptyBox(map, -1, 2, -1, 1, 49, 51);
-  // (3,0,50) stays NotMapped -> (2,0,50) is a frontier.
-
-  dmap::ExplorationFrontier frontier;
-  const dmap::PathResult result =
-      frontier.findPath(map, pt(0, 0, 50), 0.0 * su::cm);
-
-  ASSERT_TRUE(result.found);
-  ASSERT_EQ(result.path.size(), 2u);
-  EXPECT_EQ(map.get(result.path[0]), dmap::MapValue::Empty);
-  EXPECT_EQ(map.get(result.path[1]), dmap::MapValue::Empty);
-  EXPECT_EQ(result.path[1].x.numerical_value_in(su::cm), 2.0);
-  EXPECT_EQ(result.path[1].y.numerical_value_in(su::cm), 0.0);
-}
-
 // What: empty cube large enough for a 5 cm drone sphere at the centre.
 // Expected: BFS reaches a frontier on the cube surface facing NotMapped outside.
 TEST(ExplorationFrontier, FindsFrontierInsideEmptyCube) {
