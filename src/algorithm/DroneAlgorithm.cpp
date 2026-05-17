@@ -168,7 +168,52 @@ void DroneAlgorithm::tick() {
 }
 
 void DroneAlgorithm::executeNextStep() {
-  // Stub: full rotation + elevation logic implemented in the next step.
+  // Issues one movement command toward current_path_[path_index_].
+  // Priority: elevate first (if height differs), then rotate to face the
+  // target, then advance.  Because BFS steps are axis-aligned, each waypoint
+  // differs in at most one axis, so at most two ticks reach a waypoint
+  // (one rotate + one advance, or one elevate).
+
+  const DronePosition pos = pos_.getPosition();
+  const Point3D& target   = current_path_[path_index_];
+
+  // --- Height difference: elevate toward target height ---
+  const double dh = target.height.numerical_value_in(su::cm) -
+                    pos.height.numerical_value_in(su::cm);
+  if (std::abs(dh) > 1e-6) {
+    const double limit = cfg_.max_elevate_per_command.numerical_value_in(su::cm);
+    move_.elevate(std::clamp(dh, -limit, limit) * su::cm);
+    return;
+  }
+
+  // --- Horizontal step: rotate to face target, then advance ---
+  const double dx = target.x.numerical_value_in(su::cm) -
+                    pos.x.numerical_value_in(su::cm);
+  const double dy = target.y.numerical_value_in(su::cm) -
+                    pos.y.numerical_value_in(su::cm);
+
+  if (std::abs(dx) < 1e-6 && std::abs(dy) < 1e-6) {
+    return;
+  }
+
+  // Target heading in degrees; atan2 convention matches MovementMock
+  // (angle 0 = +X east, 90 = +Y south, clockwise increasing).
+  const double target_heading = std::atan2(dy, dx) * (180.0 / std::numbers::pi);
+  const double current_heading = pos.xy_angle.numerical_value_in(su::deg);
+
+  // Shortest angular delta, normalised to (-180°, 180°].
+  double delta = std::fmod(target_heading - current_heading, 360.0);
+  if (delta > 180.0)  delta -= 360.0;
+  if (delta < -180.0) delta += 360.0;
+
+  const double rot_limit = cfg_.max_rotate_per_command.numerical_value_in(su::deg);
+
+  if (std::abs(delta) > 1e-6) {
+    const TurnDirection dir = (delta > 0.0) ? TurnDirection::Right : TurnDirection::Left;
+    move_.rotate(dir, std::min(std::abs(delta), rot_limit) * su::deg);
+    return;
+  }
+
   move_.advance(cfg_.max_advance_per_command);
 }
 
