@@ -39,6 +39,36 @@ bool reachedWaypoint(const DronePosition& pos, const Point3D& target,
   return dx <= xy_step * 0.5 && dy <= xy_step * 0.5 && dh <= h_step * 0.5;
 }
 
+/// Marks every grid cell centre inside the drone sphere at `pos` as Empty
+/// unless already Occupied. Rays start at one step from the origin, so the
+/// centre cell is never painted by lidar fusion alone.
+void markDroneFootprintEmpty(IBuildingMap& map, const DronePosition& pos,
+                             double radius_cm, double xy_step, double h_step) {
+  const double cx = pos.x.numerical_value_in(su::cm);
+  const double cy = pos.y.numerical_value_in(su::cm);
+  const double ch = pos.height.numerical_value_in(su::cm);
+  const int rx = static_cast<int>(std::ceil(radius_cm / xy_step));
+  const int rh = static_cast<int>(std::ceil(radius_cm / h_step));
+  const double r2 = radius_cm * radius_cm;
+
+  for (int dx = -rx; dx <= rx; ++dx) {
+    for (int dy = -rx; dy <= rx; ++dy) {
+      for (int dz = -rh; dz <= rh; ++dz) {
+        const double ox = dx * xy_step;
+        const double oy = dy * xy_step;
+        const double oz = dz * h_step;
+        if (ox * ox + oy * oy + oz * oz > r2) {
+          continue;
+        }
+        const Point3D p{(cx + ox) * su::cm, (cy + oy) * su::cm, (ch + oz) * su::cm};
+        if (map.get(p) != MapValue::Occupied) {
+          map.set(p, MapValue::Empty);
+        }
+      }
+    }
+  }
+}
+
 }  // namespace
 
 DroneAlgorithm::DroneAlgorithm(ILidarSensor& lidar, IPositionSensor& pos, IMovementDriver& move,
@@ -59,10 +89,15 @@ void DroneAlgorithm::tick() {
   const double h_step  = decimalPlacesToStep(b.height_decimal_places);
 
   switch (phase_) {
-    case Phase::Scanning:
+    case Phase::Scanning: {
       scanner_.scan(map_);
+      const DronePosition p = pos_.getPosition();
+      markDroneFootprintEmpty(
+          map_, p, cfg_.min_passable_radius.numerical_value_in(su::cm), xy_step,
+          h_step);
       phase_ = Phase::Planning;
       break;
+    }
 
     case Phase::Planning: {
       const DronePosition p = pos_.getPosition();

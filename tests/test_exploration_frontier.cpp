@@ -66,6 +66,7 @@ TEST(ExplorationFrontier, StartNotPassableWhenSphereHasNotMapped) {
 // Uses zero radius so only each cell centre must be Empty.
 TEST(ExplorationFrontier, FindsPathAlongEmptyCorridor) {
   dmap::BuildingMap map(makeMission1cmGrid());
+  map.set(pt(-1, 0, 50), dmap::MapValue::Empty);
   map.set(pt(0, 0, 50), dmap::MapValue::Empty);
   map.set(pt(1, 0, 50), dmap::MapValue::Empty);
   map.set(pt(2, 0, 50), dmap::MapValue::Empty);

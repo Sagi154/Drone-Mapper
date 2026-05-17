@@ -58,11 +58,10 @@ bool isSpherePassable(const IBuildingMap& map, const Point3D& centre,
   return true;
 }
 
-// Returns true when `cell` borders the passable region: some axis-aligned
-// neighbour centre is not sphere-passable (NotMapped, Occupied, or outside
-// the drone's clearance). Only called on cells already passable at `cell`.
-bool isFrontier(const IBuildingMap& map, const Point3D& cell, double radius_cm,
-                double xy_step, double h_step) {
+// Returns true when `cell` has an axis-aligned NotMapped neighbour (unknown
+// space that a scan from here might reveal). Only called on passable cells.
+bool isFrontier(const IBuildingMap& map, const Point3D& cell, double xy_step,
+                double h_step) {
   const double cx = cell.x.numerical_value_in(su::cm);
   const double cy = cell.y.numerical_value_in(su::cm);
   const double ch = cell.height.numerical_value_in(su::cm);
@@ -77,7 +76,7 @@ bool isFrontier(const IBuildingMap& map, const Point3D& cell, double radius_cm,
     {cx * su::cm, cy * su::cm, (ch - h_step) * su::cm},
   };
   for (const auto& n : neighbours) {
-    if (!isSpherePassable(map, n, radius_cm, xy_step, h_step)) {
+    if (map.get(n) == MapValue::NotMapped) {
       return true;
     }
   }
@@ -122,8 +121,7 @@ PathResult ExplorationFrontier::findPath(const IBuildingMap& map,
 
     const Point3D cur_pt = keyToPoint(cur, xy_step, h_step);
 
-    if (cur != start_key &&
-        isFrontier(map, cur_pt, radius_cm, xy_step, h_step)) {
+    if (cur != start_key && isFrontier(map, cur_pt, xy_step, h_step)) {
       // Reconstruct path from start (exclusive) to frontier (inclusive).
       PathResult result;
       result.found = true;
