@@ -1,34 +1,55 @@
 #pragma once
 
-#include "common/Types.h"
+#include "algorithm/ExplorationFrontier.h"
+#include "algorithm/SphericalScanner.h"
+#include "common/Point3D.h"
+#include "config/DroneConfig.h"
 #include "drivers/IMovementDriver.h"
 #include "mapping/IBuildingMap.h"
-#include "sensors/ILidarSensor.h"
 #include "sensors/IPositionSensor.h"
+
+#include <cstddef>
+#include <vector>
 
 namespace dmap {
 
+/// Autonomous frontier-based BFS exploration algorithm.
+/// Each tick advances one phase of the state machine:
+///   Scanning — full spherical lidar sweep fused into the drone's map.
+///   Planning — BFS finds the nearest reachable frontier and the path to it.
+///   Moving   — executes one waypoint step along the planned path.
+/// Accepts the full DroneConfig for capability parameters (advance step,
+/// lidar range, collision radius).
 class DroneAlgorithm {
  public:
   DroneAlgorithm(ILidarSensor& lidar, IPositionSensor& pos, IMovementDriver& move,
-                 IBuildingMap& map, LengthCm advance_step, LengthCm lidar_z_max);
+                 IBuildingMap& map, const DroneConfig& cfg);
 
-  /// One step: lidar scan into map, then try advance; on block rotate right until four blocks end the run.
+  /// Advances the exploration by one phase step (scan, plan, or move).
   void tick();
 
-  /// True once four consecutive advances fail (surrounded on the XY plane at current height).
+  /// True when exploration is complete (no reachable frontiers remain).
   [[nodiscard]] bool isFinished() const noexcept { return finished_; }
 
  private:
-  ILidarSensor& lidar_;
   IPositionSensor& pos_;
   IMovementDriver& move_;
   IBuildingMap& map_;
-  LengthCm advance_step_{};
-  LengthCm lidar_z_max_{};
+  DroneConfig cfg_{};
 
-  int blocked_advances_{0};
+  enum class Phase { Scanning, Planning, Moving };
+
+  Phase phase_{Phase::Scanning};
+  SphericalScanner scanner_;             ///< Performs full spherical lidar sweeps.
+  ExplorationFrontier frontier_{};
+  std::vector<Point3D> current_path_{};  ///< Waypoints to the current frontier.
+  std::size_t path_index_{0};            ///< Index of the next waypoint to reach.
   bool finished_{false};
+
+  /// Issues one movement command toward the current waypoint
+  /// (current_path_[path_index_]): rotates to face it, then advances or
+  /// elevates by one grid step.
+  void executeNextStep();
 };
 
 }  // namespace dmap

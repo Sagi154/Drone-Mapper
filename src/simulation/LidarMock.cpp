@@ -6,13 +6,11 @@
 //      querying the ground-truth map at each sample point.
 //   4. Records the first Occupied hit and stops (first-hit-only model).
 //      Hits closer than Z_min report distance=0 (too close to measure accurately).
-//      Beams with no hit within Z_max still appear in the result with distance=-1.
 
 #include "simulation/LidarMock.h"
 
 #include "common/MathUtils.h"
 #include "common/Point3D.h"
-#include "sensors/LidarTypes.h"
 #include "simulation/CollisionDetector.h"
 
 #include <mp-units/systems/si/unit_symbols.h>
@@ -24,7 +22,7 @@ namespace su = mp_units::si::unit_symbols;
 
 LidarMock::LidarMock(SimulationState& state, DroneConfig drone_cfg)
     : state_(state), drone_cfg_(drone_cfg), calc_(drone_cfg.lidar) {}
-
+  
 LidarScanResult LidarMock::scan(std::optional<AngleDeg> xy_offset,
                                 std::optional<AngleDeg> height_angle) {
   const auto pos = state_.dronePosition();
@@ -90,8 +88,7 @@ LidarScanResult LidarMock::scan(std::optional<AngleDeg> xy_offset,
       }
     }
     if (!hit) {
-      result.push_back({azimuth_deg * su::deg,
-                        elevation_deg * su::deg,
+      result.push_back({azimuth_deg * su::deg, elevation_deg * su::deg,
                         lidarNoReturnDistance()});
     }
   }

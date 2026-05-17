@@ -40,8 +40,7 @@ int main(int argc, char** argv) {
   dmap::LidarMock lidar(state, drone_cfg);
   dmap::PositionMock pos(state);
   dmap::MovementMock move(state, drone_cfg, mission);
-  dmap::DroneAlgorithm algo(lidar, pos, move, map, drone_cfg.max_advance_per_command,
-                            drone_cfg.lidar.z_max);
+  dmap::DroneAlgorithm algo(lidar, pos, move, map, drone_cfg);
   int ticks = 0;
   constexpr int kMaxTicks = 1'000'000;
   while (!algo.isFinished() && ticks < kMaxTicks) {

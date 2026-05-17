@@ -63,6 +63,48 @@ Simple split so you can work in parallel without stepping on the same files all 
 
 ---
 
+## Milestone 3 — Algorithm design rationale
+
+### What it does
+
+The drone explores the building autonomously using a frontier-based BFS loop.
+A **frontier** is a confirmed-empty cell adjacent to at least one `NotMapped`
+cell — moving there and scanning may uncover new space.
+
+### Three-phase state machine (`DroneAlgorithm::tick()`)
+
+Each call to `tick()` advances exactly one phase:
+
+| Phase | What happens |
+|-------|-------------|
+| **Scanning** | `fullScan()` fires a full spherical lidar sweep (elevation −90°→+90°, 360° azimuth at each tier). All hits are fused into the drone's `IBuildingMap` via `applyLidarHitsToMap`. Transitions to Planning. |
+| **Planning** | `ExplorationFrontier::findPath()` runs BFS through sphere-safe cells to find the nearest frontier. If found, the path is stored and the phase transitions to Moving. If none exists, `finished_` is set. |
+| **Moving** | `executeNextStep()` issues one movement command (elevate, rotate, or advance) toward the next waypoint. Once the waypoint is reached the index advances; on path completion the phase returns to Scanning. |
+
+### Key design decisions
+
+**Sphere-safe passability:** A BFS cell is only passable if every grid cell
+within `min_passable_radius` of its centre is `Empty` in the drone's own map.
+`NotMapped` blocks movement — it means no information, not "probably empty."
+
+**Dense spherical scan before planning:** The lidar is a directional cone;
+one scan marks only cells along beam ray paths. The angular step is
+`atan(cell_size / z_min)` so no grid cell falls in a beam gap at minimum
+range. Azimuth step widens near poles (`el_step / cos(el)`) for uniform
+physical spacing.
+
+**Determinism:** Scan order, BFS neighbour order (+X, −X, +Y, −Y, +Height,
+−Height), and path reconstruction are all fixed. No randomness.
+
+### Interfaces other modules should use
+
+- `DroneAlgorithm(lidar, pos, move, map, DroneConfig)` — main entry point.
+- `ExplorationFrontier::findPath(map, start, drone_radius)` — returns
+  `PathResult{found, path}`; usable independently for testing.
+- `BlindSpotAnalyzer` — empty stub; blind spots become frontiers naturally.
+
+---
+
 ## Milestone 4 — Score, hardening, submission (2–4 days)
 
 **B**
