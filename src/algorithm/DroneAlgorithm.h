@@ -8,16 +8,19 @@
 
 namespace dmap {
 
-/// Autonomous drone exploration algorithm.
-/// Accepts the full DroneConfig so it can use all capability parameters
-/// (advance step, lidar range, collision radius) without callers having to
-/// extract individual fields.
+/// Autonomous frontier-based BFS exploration algorithm.
+/// Each tick cycles through three phases:
+///   SCANNING — full spherical lidar sweep fused into the drone's map.
+///   PLANNING — BFS finds the nearest reachable frontier and the path to it.
+///   MOVING   — executes one waypoint step along the planned path.
+/// Accepts the full DroneConfig for capability parameters (advance step,
+/// lidar range, collision radius).
 class DroneAlgorithm {
  public:
   DroneAlgorithm(ILidarSensor& lidar, IPositionSensor& pos, IMovementDriver& move,
                  IBuildingMap& map, const DroneConfig& cfg);
 
-  /// One step of the exploration loop.
+  /// Advances the exploration by one phase step (scan, plan, or move).
   void tick();
 
   /// True when exploration is complete (no reachable frontiers remain).

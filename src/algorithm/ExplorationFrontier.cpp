@@ -58,8 +58,8 @@ bool isSpherePassable(const IBuildingMap& map, const Point3D& centre,
   return true;
 }
 
-// Returns true if `cell` is a frontier: passable and has at least one
-// NotMapped axis-aligned neighbour.
+// Returns true if `cell` has at least one NotMapped axis-aligned neighbour.
+// Only called on cells already confirmed passable by isSpherePassable.
 bool isFrontier(const IBuildingMap& map, const Point3D& cell,
                 double xy_step, double h_step) {
   const double cx = cell.x.numerical_value_in(su::cm);

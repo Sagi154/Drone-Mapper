@@ -1,8 +1,13 @@
 // DroneAlgorithm.cpp
 // Frontier-based BFS exploration algorithm.
-// Each tick runs one phase of the state machine: SCANNING (fuse lidar into
-// map), PLANNING (BFS to find nearest frontier and path), or MOVING (execute
-// the next waypoint in the current path).
+// Three-phase state machine per tick:
+//   SCANNING — fullScan() fires a full spherical lidar sweep and fuses results
+//              into the drone's map so all obstacles nearby are confirmed.
+//   PLANNING — ExplorationFrontier::findPath() runs BFS through sphere-safe
+//              empty cells to find the nearest frontier and the path to it.
+//   MOVING   — executeNextStep() rotates to face the next waypoint, then
+//              advances or elevates one grid step toward it.
+// The algorithm is deterministic: scan pattern and BFS neighbour order are fixed.
 
 #include "algorithm/DroneAlgorithm.h"
 
