@@ -12,6 +12,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <numbers>
 #include <mp-units/systems/si/unit_symbols.h>
 
 namespace dmap {
@@ -71,13 +72,51 @@ DroneAlgorithm::DroneAlgorithm(ILidarSensor& lidar, IPositionSensor& pos, IMovem
       map_(map),
       cfg_(cfg) {}
 
+void DroneAlgorithm::fullScan() {
+  // Full spherical sweep from the current position (position fixed for all shots).
+  //
+  // Step sizing (so no grid cell is left between adjacent aim directions at z_min):
+  //   cell_cm  — smallest map cell edge (cm), min of XY and height quantization
+  //   denom    — z_min in cm, or 1 if z_min is zero (avoids divide-by-zero)
+  //   el_step  — base angular step (deg): atan(cell_cm / denom)
+  //
+  // Per elevation tier (el from -90° to +90°):
+  //   el_clamped — elevation sent to scan(); last tier clamped to ±90°
+  //   cos_el     — cos(el); latitude circle radius shrinks toward the poles
+  //   az_step    — azimuth step at this tier: el_step/cos_el, or 360° at a pole
+  const DronePosition here = pos_.getPosition();
+  const MapBounds b = map_.bounds();
+
+  const double cell_cm = std::min(decimalPlacesToStep(b.xy_decimal_places),
+                                  decimalPlacesToStep(b.height_decimal_places));
+  const double z_min_cm = cfg_.lidar.z_min.numerical_value_in(su::cm);
+  const double denom = (z_min_cm > 0.0) ? z_min_cm : 1.0;
+  const double el_step = std::atan(cell_cm / denom) * (180.0 / std::numbers::pi);
+
+  // Full spherical sweep: outer loop over elevation (-90° to +90°), inner
+  // loop over azimuth.  Near the poles the latitude circle shrinks, so the
+  // azimuth step is widened proportionally (az_step = el_step / cos(el)).
+  // When cos(el) ≈ 0 (within el_step of a pole) one azimuth scan suffices.
+  for (double el = -90.0; el <= 90.0 + 1e-9; el += el_step) {
+    const double el_clamped = std::clamp(el, -90.0, 90.0);
+    const double cos_el = std::cos(el_clamped * (std::numbers::pi / 180.0));
+    const double az_step = (cos_el > 1e-6) ? (el_step / cos_el) : 360.0;
+
+    for (double az = 0.0; az < 360.0; az += az_step) {
+      applyLidarHitsToMap(map_, here,
+                          lidar_.scan(az * su::deg, el_clamped * su::deg),
+                          cfg_.lidar.z_max);
+    }
+  }
+}
+
 void DroneAlgorithm::tick() {
   if (finished_) {
     return;
   }
 
   const DronePosition before = pos_.getPosition();
-  applyLidarHitsToMap(map_, before, lidar_.scan(), cfg_.lidar.z_max);
+  fullScan();
 
   move_.advance(cfg_.max_advance_per_command);
   const DronePosition after = pos_.getPosition();

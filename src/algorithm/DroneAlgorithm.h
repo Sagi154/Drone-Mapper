@@ -32,6 +32,14 @@ class DroneAlgorithm {
 
   int blocked_advances_{0};
   bool finished_{false};
+
+  /// Fires a full spherical sweep from the current position and fuses all
+  /// results into the map.  Elevation steps from -90° to +90°; at each tier
+  /// a full 360° azimuth sweep is performed with an adaptive step that widens
+  /// near the poles (where latitude circles shrink).  The base step is chosen
+  /// so that at z_min distance no grid cell falls in the gap between adjacent
+  /// beam center directions.
+  void fullScan();
 };
 
 }  // namespace dmap
