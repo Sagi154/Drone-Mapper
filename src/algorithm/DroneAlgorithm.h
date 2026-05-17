@@ -1,11 +1,11 @@
 #pragma once
 
 #include "algorithm/ExplorationFrontier.h"
+#include "algorithm/SphericalScanner.h"
 #include "common/Point3D.h"
 #include "config/DroneConfig.h"
 #include "drivers/IMovementDriver.h"
 #include "mapping/IBuildingMap.h"
-#include "sensors/ILidarSensor.h"
 #include "sensors/IPositionSensor.h"
 
 #include <cstddef>
@@ -32,7 +32,6 @@ class DroneAlgorithm {
   [[nodiscard]] bool isFinished() const noexcept { return finished_; }
 
  private:
-  ILidarSensor& lidar_;
   IPositionSensor& pos_;
   IMovementDriver& move_;
   IBuildingMap& map_;
@@ -41,18 +40,11 @@ class DroneAlgorithm {
   enum class Phase { Scanning, Planning, Moving };
 
   Phase phase_{Phase::Scanning};
+  SphericalScanner scanner_;             ///< Performs full spherical lidar sweeps.
   ExplorationFrontier frontier_{};
   std::vector<Point3D> current_path_{};  ///< Waypoints to the current frontier.
   std::size_t path_index_{0};            ///< Index of the next waypoint to reach.
   bool finished_{false};
-
-  /// Fires a full spherical sweep from the current position and fuses all
-  /// results into the map.  Elevation steps from -90° to +90°; at each tier
-  /// a full 360° azimuth sweep is performed with an adaptive step that widens
-  /// near the poles (where latitude circles shrink).  The base step is chosen
-  /// so that at z_min distance no grid cell falls in the gap between adjacent
-  /// beam center directions.
-  void fullScan();
 
   /// Issues one movement command toward the current waypoint
   /// (current_path_[path_index_]): rotates to face it, then advances or
