@@ -23,6 +23,7 @@ add_drone_mapper_test_suite(drone_mapper_mapping_tests mapping
 
 add_drone_mapper_test_suite(drone_mapper_algorithm_tests algorithm
         test_drone_algorithm.cpp
+        test_exploration_frontier.cpp
 )
 
 add_drone_mapper_test_suite(drone_mapper_simulation_tests simulation
