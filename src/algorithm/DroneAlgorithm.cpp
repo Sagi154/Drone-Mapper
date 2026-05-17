@@ -1,7 +1,8 @@
 // DroneAlgorithm.cpp
-// Each tick: lidar scan into the building map (empty along rays, occupied at hits), then one
-// advance. If the move does not change XYH, rotate 90° right; four consecutive blocked advances
-// end the run (local horizontal dead-end at the current height).
+// Frontier-based BFS exploration algorithm.
+// Each tick runs one phase of the state machine: SCANNING (fuse lidar into
+// map), PLANNING (BFS to find nearest frontier and path), or MOVING (execute
+// the next waypoint in the current path).
 
 #include "algorithm/DroneAlgorithm.h"
 
@@ -27,6 +28,9 @@ bool same_xy_height(const DronePosition& a, const DronePosition& b) {
   return nearlySameCm(a.x, b.x) && nearlySameCm(a.y, b.y) && nearlySameCm(a.height, b.height);
 }
 
+/// Marks cells along each lidar beam as Empty (up to hit or z_max) and the
+/// hit cell as Occupied. Miss beams (distance == -1) mark the full ray empty.
+/// Distance == 0 (too close) marks only the hit cell Occupied, no ray cells.
 void applyLidarHitsToMap(IBuildingMap& map, const DronePosition& here,
                          const LidarScanResult& hits, LengthCm lidar_z_max) {
   const MapBounds b = map.bounds();
@@ -60,13 +64,12 @@ void applyLidarHitsToMap(IBuildingMap& map, const DronePosition& here,
 }  // namespace
 
 DroneAlgorithm::DroneAlgorithm(ILidarSensor& lidar, IPositionSensor& pos, IMovementDriver& move,
-                               IBuildingMap& map, LengthCm advance_step, LengthCm lidar_z_max)
+                               IBuildingMap& map, const DroneConfig& cfg)
     : lidar_(lidar),
       pos_(pos),
       move_(move),
       map_(map),
-      advance_step_(advance_step),
-      lidar_z_max_(lidar_z_max) {}
+      cfg_(cfg) {}
 
 void DroneAlgorithm::tick() {
   if (finished_) {
@@ -74,9 +77,9 @@ void DroneAlgorithm::tick() {
   }
 
   const DronePosition before = pos_.getPosition();
-  applyLidarHitsToMap(map_, before, lidar_.scan(), lidar_z_max_);
+  applyLidarHitsToMap(map_, before, lidar_.scan(), cfg_.lidar.z_max);
 
-  move_.advance(advance_step_);
+  move_.advance(cfg_.max_advance_per_command);
   const DronePosition after = pos_.getPosition();
 
   if (same_xy_height(before, after)) {

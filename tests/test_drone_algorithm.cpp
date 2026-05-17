@@ -66,7 +66,7 @@ TEST(DroneAlgorithm, TickDoesNotThrow) {
   dmap::LidarMock lidar(state, drone_cfg);
   dmap::PositionMock pos(state);
   dmap::MovementMock move(state, drone_cfg, mission);
-  dmap::DroneAlgorithm algo(lidar, pos, move, map, 0.0 * su::cm, drone_cfg.lidar.z_max);
+  dmap::DroneAlgorithm algo(lidar, pos, move, map, drone_cfg);
 
   int ticks = 0;
   constexpr int kCap = 10;
@@ -80,8 +80,8 @@ TEST(DroneAlgorithm, TickDoesNotThrow) {
 
 // What: one tick with a wall in ground truth in front of the drone.
 // Expected: the drone map marks cells along the beam as Empty and the hit
-//           cell as Occupied; a short advance still runs so this is not
-//           confused with advance(0) blocked-move counting.
+//           cell as Occupied regardless of whether the subsequent advance
+//           is blocked by the wall.
 TEST(DroneAlgorithm, Tick_ScanUpdatesMap_OccupiedCellMarked) {
   dmap::SimulationState state;
   const auto mission = makeMissionForScanMapTest();
@@ -104,7 +104,7 @@ TEST(DroneAlgorithm, Tick_ScanUpdatesMap_OccupiedCellMarked) {
   dmap::LidarMock lidar(state, drone_cfg);
   dmap::PositionMock pos(state);
   dmap::MovementMock move(state, drone_cfg, mission);
-  dmap::DroneAlgorithm algo(lidar, pos, move, map, 10.0 * su::cm, drone_cfg.lidar.z_max);
+  dmap::DroneAlgorithm algo(lidar, pos, move, map, drone_cfg);
 
   algo.tick();
 

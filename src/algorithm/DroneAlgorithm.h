@@ -1,6 +1,6 @@
 #pragma once
 
-#include "common/Types.h"
+#include "config/DroneConfig.h"
 #include "drivers/IMovementDriver.h"
 #include "mapping/IBuildingMap.h"
 #include "sensors/ILidarSensor.h"
@@ -8,15 +8,19 @@
 
 namespace dmap {
 
+/// Autonomous drone exploration algorithm.
+/// Accepts the full DroneConfig so it can use all capability parameters
+/// (advance step, lidar range, collision radius) without callers having to
+/// extract individual fields.
 class DroneAlgorithm {
  public:
   DroneAlgorithm(ILidarSensor& lidar, IPositionSensor& pos, IMovementDriver& move,
-                 IBuildingMap& map, LengthCm advance_step, LengthCm lidar_z_max);
+                 IBuildingMap& map, const DroneConfig& cfg);
 
-  /// One step: lidar scan into map, then try advance; on block rotate right until four blocks end the run.
+  /// One step of the exploration loop.
   void tick();
 
-  /// True once four consecutive advances fail (surrounded on the XY plane at current height).
+  /// True when exploration is complete (no reachable frontiers remain).
   [[nodiscard]] bool isFinished() const noexcept { return finished_; }
 
  private:
@@ -24,8 +28,7 @@ class DroneAlgorithm {
   IPositionSensor& pos_;
   IMovementDriver& move_;
   IBuildingMap& map_;
-  LengthCm advance_step_{};
-  LengthCm lidar_z_max_{};
+  DroneConfig cfg_{};
 
   int blocked_advances_{0};
   bool finished_{false};
