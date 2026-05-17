@@ -11,6 +11,7 @@
 
 #include "algorithm/DroneAlgorithm.h"
 
+#include "algorithm/ExplorationFrontier.h"
 #include "common/MathUtils.h"
 #include "mapping/MapTypes.h"
 #include "sensors/LidarTypes.h"
@@ -26,12 +27,17 @@ namespace {
 
 namespace su = mp_units::si::unit_symbols;
 
-bool nearlySameCm(LengthCm a, LengthCm b) {
-  return std::abs(a.numerical_value_in(su::cm) - b.numerical_value_in(su::cm)) < 1e-6;
-}
-
-bool same_xy_height(const DronePosition& a, const DronePosition& b) {
-  return nearlySameCm(a.x, b.x) && nearlySameCm(a.y, b.y) && nearlySameCm(a.height, b.height);
+/// Returns true if the drone centre `pos` is within one grid step of `target`
+/// in every axis, meaning the waypoint has been reached.
+bool reachedWaypoint(const DronePosition& pos, const Point3D& target,
+                     double xy_step, double h_step) {
+  const double dx = std::abs(pos.x.numerical_value_in(su::cm) -
+                             target.x.numerical_value_in(su::cm));
+  const double dy = std::abs(pos.y.numerical_value_in(su::cm) -
+                             target.y.numerical_value_in(su::cm));
+  const double dh = std::abs(pos.height.numerical_value_in(su::cm) -
+                             target.height.numerical_value_in(su::cm));
+  return dx <= xy_step * 0.5 && dy <= xy_step * 0.5 && dh <= h_step * 0.5;
 }
 
 /// Marks cells along each lidar beam as Empty (up to hit or z_max) and the
@@ -120,22 +126,50 @@ void DroneAlgorithm::tick() {
     return;
   }
 
-  const DronePosition before = pos_.getPosition();
-  fullScan();
+  const MapBounds b = map_.bounds();
+  const double xy_step = decimalPlacesToStep(b.xy_decimal_places);
+  const double h_step  = decimalPlacesToStep(b.height_decimal_places);
 
-  move_.advance(cfg_.max_advance_per_command);
-  const DronePosition after = pos_.getPosition();
+  switch (phase_) {
+    case Phase::Scanning:
+      fullScan();
+      phase_ = Phase::Planning;
+      break;
 
-  if (same_xy_height(before, after)) {
-    ++blocked_advances_;
-    if (blocked_advances_ >= 4) {
-      finished_ = true;
-      return;
+    case Phase::Planning: {
+      const DronePosition p = pos_.getPosition();
+      const Point3D here{p.x, p.y, p.height};
+      const PathResult result = frontier_.findPath(map_, here, cfg_.min_passable_radius);
+      if (!result.found) {
+        finished_ = true;
+        return;
+      }
+      current_path_ = result.path;
+      path_index_   = 0;
+      phase_        = Phase::Moving;
+      break;
     }
-    move_.rotate(TurnDirection::Right, 90.0 * su::deg);
-  } else {
-    blocked_advances_ = 0;
+
+    case Phase::Moving: {
+      executeNextStep();
+
+      // Check whether the drone has reached the current waypoint.
+      const DronePosition pos = pos_.getPosition();
+      if (reachedWaypoint(pos, current_path_[path_index_], xy_step, h_step)) {
+        ++path_index_;
+        if (path_index_ >= current_path_.size()) {
+          // Arrived at frontier — scan from the new position.
+          phase_ = Phase::Scanning;
+        }
+      }
+      break;
+    }
   }
+}
+
+void DroneAlgorithm::executeNextStep() {
+  // Stub: full rotation + elevation logic implemented in the next step.
+  move_.advance(cfg_.max_advance_per_command);
 }
 
 }  // namespace dmap
