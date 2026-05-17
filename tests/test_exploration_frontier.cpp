@@ -33,6 +33,18 @@ dmap::Point3D pt(double x, double y, double h) {
   return {x * su::cm, y * su::cm, h * su::cm};
 }
 
+/// Fills an axis-aligned box of Empty cells (inclusive bounds, cm grid indices).
+void fillEmptyBox(dmap::BuildingMap& map, int x0, int x1, int y0, int y1, int z0,
+                  int z1) {
+  for (int x = x0; x <= x1; ++x) {
+    for (int y = y0; y <= y1; ++y) {
+      for (int z = z0; z <= z1; ++z) {
+        map.set(pt(x, y, z), dmap::MapValue::Empty);
+      }
+    }
+  }
+}
+
 /// Fills a cube of Empty cells centred at (cx,cy,ch) with half-edge `half` (cm).
 void fillEmptyCube(dmap::BuildingMap& map, int cx, int cy, int ch, int half) {
   for (int x = cx - half; x <= cx + half; ++x) {
@@ -66,10 +78,8 @@ TEST(ExplorationFrontier, StartNotPassableWhenSphereHasNotMapped) {
 // Uses zero radius so only each cell centre must be Empty.
 TEST(ExplorationFrontier, FindsPathAlongEmptyCorridor) {
   dmap::BuildingMap map(makeMission1cmGrid());
-  map.set(pt(-1, 0, 50), dmap::MapValue::Empty);
-  map.set(pt(0, 0, 50), dmap::MapValue::Empty);
-  map.set(pt(1, 0, 50), dmap::MapValue::Empty);
-  map.set(pt(2, 0, 50), dmap::MapValue::Empty);
+  // 3x3 corridor along +X (including ±Y and ±height); only +X ends at unknown.
+  fillEmptyBox(map, -1, 2, -1, 1, 49, 51);
   // (3,0,50) stays NotMapped -> (2,0,50) is a frontier.
 
   dmap::ExplorationFrontier frontier;
