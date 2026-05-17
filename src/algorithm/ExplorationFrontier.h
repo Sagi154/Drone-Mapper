@@ -33,8 +33,9 @@ class ExplorationFrontier {
   /// `drone_radius` of its centre is Empty in `map`. NotMapped or Occupied
   /// neighbours within the radius block movement.
   ///
-/// A frontier is a passable cell with at least one axis-aligned neighbour that
-/// is not sphere-passable (unknown, occupied, or out of bounds).
+  /// A frontier is a passable cell with at least one axis-aligned neighbour
+  /// whose drone sphere overlaps a NotMapped cell. Occupied (known wall) and
+  /// OutOfBounds cells are not unexplored space and do not qualify.
   ///
   /// Neighbour expansion order is fixed (+X, -X, +Y, -Y, +Height, -Height)
   /// for determinism.

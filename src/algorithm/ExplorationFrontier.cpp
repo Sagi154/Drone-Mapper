@@ -58,10 +58,38 @@ bool isSpherePassable(const IBuildingMap& map, const Point3D& centre,
   return true;
 }
 
-// Returns true when `cell` borders the passable region: some axis-aligned
-// neighbour centre cannot host the drone sphere (NotMapped, Occupied, or
-// OutOfBounds). With radius >= grid step, a grid-adjacent NotMapped cell is
-// always non-passable, so this also marks the edge of known-empty space.
+// Returns true if any grid cell whose centre lies within drone_radius of
+// `centre` has the value NotMapped. Occupied and OutOfBounds cells are known
+// and do not indicate unexplored space.
+bool sphereContainsNotMapped(const IBuildingMap& map, const Point3D& centre,
+                             double radius_cm, double xy_step, double h_step) {
+  const double cx = centre.x.numerical_value_in(su::cm);
+  const double cy = centre.y.numerical_value_in(su::cm);
+  const double ch = centre.height.numerical_value_in(su::cm);
+
+  const int rx = static_cast<int>(std::ceil(radius_cm / xy_step));
+  const int rh = static_cast<int>(std::ceil(radius_cm / h_step));
+  const double r2 = radius_cm * radius_cm;
+
+  for (int dx = -rx; dx <= rx; ++dx) {
+    for (int dy = -rx; dy <= rx; ++dy) {
+      for (int dz = -rh; dz <= rh; ++dz) {
+        const double ox = dx * xy_step;
+        const double oy = dy * xy_step;
+        const double oz = dz * h_step;
+        if (ox * ox + oy * oy + oz * oz > r2) continue;
+        const Point3D p{(cx + ox) * su::cm, (cy + oy) * su::cm,
+                        (ch + oz) * su::cm};
+        if (map.get(p) == MapValue::NotMapped) return true;
+      }
+    }
+  }
+  return false;
+}
+
+// Returns true when scanning from `cell` could reveal new space: at least one
+// axis-aligned neighbour's drone sphere overlaps unexplored (NotMapped) cells.
+// Occupied walls and OutOfBounds regions are already known and do not qualify.
 bool isFrontier(const IBuildingMap& map, const Point3D& cell, double radius_cm,
                 double xy_step, double h_step) {
   const double cx = cell.x.numerical_value_in(su::cm);
@@ -78,7 +106,7 @@ bool isFrontier(const IBuildingMap& map, const Point3D& cell, double radius_cm,
     {cx * su::cm, cy * su::cm, (ch - h_step) * su::cm},
   };
   for (const auto& n : neighbours) {
-    if (!isSpherePassable(map, n, radius_cm, xy_step, h_step)) {
+    if (sphereContainsNotMapped(map, n, radius_cm, xy_step, h_step)) {
       return true;
     }
   }

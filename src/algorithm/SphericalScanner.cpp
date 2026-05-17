@@ -40,7 +40,10 @@ void applyLidarHitsToMap(IBuildingMap& map, const DronePosition& here,
       for (double t_cm = ray_step; t_cm <= z_max_cm; t_cm += ray_step) {
         LidarHit slice = h;
         slice.distance = t_cm * su::cm;
-        map.set(hitToWorldPoint(here, slice), MapValue::Empty);
+        const Point3D p = hitToWorldPoint(here, slice);
+        if (map.get(p) != MapValue::Occupied) {
+          map.set(p, MapValue::Empty);
+        }
       }
       continue;
     }
@@ -50,7 +53,10 @@ void applyLidarHitsToMap(IBuildingMap& map, const DronePosition& here,
       for (double t_cm = ray_step; t_cm < d_cm; t_cm += ray_step) {
         LidarHit slice = h;
         slice.distance = t_cm * su::cm;
-        map.set(hitToWorldPoint(here, slice), MapValue::Empty);
+        const Point3D p = hitToWorldPoint(here, slice);
+        if (map.get(p) != MapValue::Occupied) {
+          map.set(p, MapValue::Empty);
+        }
       }
     }
     map.set(hitToWorldPoint(here, h), MapValue::Occupied);
